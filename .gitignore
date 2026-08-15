@@ -1,0 +1,21 @@
+# 系统 / 编辑器
+.DS_Store
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+
+# ROS / 运行产物
+*.log
+*.bag
+build/
+devel/
+install/
+.catkin/
+
+# Codex 环境占位目录（会话数据不要进仓库）
+.agents/
+.codex/
+.git/
+.gitdata/
