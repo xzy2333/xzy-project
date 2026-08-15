@@ -70,9 +70,11 @@ source ~/.bashrc
 
 ```bash
 cd ~
-git clone <本仓库地址> uuv_navi
+git clone git@github.com:xzy2333/xzy2333.git uuv_navi
 cd uuv_navi
 ```
+
+（如果以后仓库改名或迁移，用新的地址替换即可。）
 
 ## 8. Codex CLI（可选，用于恢复“这个助手”本身）
 
@@ -97,6 +99,8 @@ ssh-keygen -t ed25519 -C "你的邮箱"
 cat ~/.ssh/id_ed25519.pub   # 粘贴到 GitHub → Settings → SSH and GPG keys
 ```
 
+注意：SSH 私钥不会跟着仓库走，重装系统后需要重新生成并添加。
+
 ## 验证
 
 ```bash
@@ -104,4 +108,3 @@ rosversion -d          # noetic
 echo $TURTLEBOT3_MODEL # waffle_pi
 python3 -c "import numpy, matplotlib; print('ok')"
 ```
-
