@@ -78,6 +78,41 @@ ROS 选型（详见 ENV_SETUP.md）：
 踩坑记录：仿真松键车不停（cmd_vel 无零速度）、map.yaml 的 image 路径必须随 pgm 一起搬、
 初始位姿要设在建图出发点（spawn 在 (-2,-0.5)，AMCL 默认却是 (0,0,0)）。
 
+### 里程碑 A：自建 Gazebo 环境（恢复系统后第 1 周）
+
+目标：把"跑官方 turtlebot3_world"升级成"自己的环境"，重跑建图 + 导航，产出截图与 30 秒视频。
+验收：从建图到导航全程不依赖官方 world，`worlds/`、`maps/custom_map.*`、`blog/assets/` 各有一份存档。
+
+#### A1 世界设计（Gazebo Building Editor）
+
+- [ ] 规划场景：定尺寸（建议 8~12m 见方）、墙和障碍物布局（模拟实验室走廊或复试想讲的场景）
+- [ ] 用 Gazebo Building Editor 搭墙/门/障碍物，导出 `.world` 到 `uuv_navi/worlds/`（world 文件入库，别只留在 `~/.gazebo`）
+- [ ] 在 `.world` 里给 TurtleBot3 设置 spawn 坐标，并记录建图起点（导航初始位姿要用同一个点）
+- [ ] 启动验证：`roslaunch turtlebot3_gazebo turtlebot3_world.launch world_file:=<自建世界>` 正常加载，激光有反射
+- [ ] 存一张 Gazebo 环境截图（博客/视频素材）
+
+#### A2 建图参数
+
+- [ ] 用 gmapping 在自建环境重跑建图（键盘遥控或脚本路线），确认闭环、无重影
+- [ ] 记录并调参：`maxUrange`、`minimumScore`、`linearUpdate` / `angularUpdate`（写进自己的 gmapping launch）
+- [ ] `map_saver` 保存到 `maps/custom_map.{yaml,pgm}`，检查 `map.yaml` 里 `image:` 用相对路径（别再踩 map_server 挂掉的坑）
+- [ ] 对比官方地图 vs 自建地图：栅格密度、走廊宽度是否符合实际
+
+#### A3 导航验证
+
+- [ ] 启动 navigation 栈（AMCL + move_base），`map_file` 指向 `custom_map.yaml`
+- [ ] 发布初始位姿（坐标 = A1 记录的 spawn 点），确认粒子云收敛、车的位置和 Gazebo 一致
+- [ ] 依次设 3 个目标点（近/中/远），记录：是否到达、耗时、路径是否绕远
+- [ ] 绕障验证：Gazebo 里临时加一个 box 挡路，看 move_base 是否重规划
+- [ ] 截图存档：粒子云收敛前后、激光对齐瞬间、重规划瞬间
+
+#### A4 录制脚本与博客
+
+- [ ] 按 `blog/VIDEO_CHECKLIST.md` 分镜录 30 秒视频：环境展示 → 建图 → 导航 → 总结
+- [ ] 截图/视频素材归档到 `blog/assets/`
+- [ ] 博客加"自主搭建"章节：官方 demo → 自建环境的差异、这次踩的新坑
+- [ ] 勾掉本里程碑，素材计入复试检查单
+
 ### M3 航点控制（10 月中旬前完成）
 
 - [ ] 跑通 `m2_waypoint_control/run.py`，看懂输出图
@@ -151,6 +186,7 @@ ROS 选型（详见 ENV_SETUP.md）：
 - [ ] M4：编队仿真图（`m4_swarm/output/m4_formation.png`）
 - [ ] 每个模块一篇技术博客（CSDN/知乎）
 - [ ] ROS1 主线博客发布（初稿：`blog/01_gazebo_slam_navigation.md`）
+- [ ] 里程碑 A：自建环境建图/导航截图 + 30 秒视频（`blog/assets/`）
 - [ ] 每个模块 3~5 分钟演示视频（B 站）
 - [ ] GitHub 仓库 README 画架构图
 
