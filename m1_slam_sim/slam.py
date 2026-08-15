@@ -97,8 +97,13 @@ def score_pose_img(img, scan, pose, max_range, res):
     return total
 
 
-def scan_match(map_, scan, p0, max_range):
-    """相关扫描匹配：粗搜（0.2m/2°）→ 精搜（0.05m/0.5°）。"""
+def scan_match(map_, scan, p0, max_range,
+               coarse_window=0.40, fine_window=0.10):
+    """相关扫描匹配：粗搜（0.2m/2°）→ 精搜（0.05m/0.5°）。
+
+    coarse_window / fine_window 可调（默认与原来一致），
+    用于 M1 参数实验：窗口太小容易跟丢，太大搜索慢。
+    """
     img = map_.blurred_image(passes=1)
     res = map_.res
 
@@ -117,8 +122,8 @@ def scan_match(map_, scan, p0, max_range):
         return best_p, best_s
 
     best_p, best_s = p0, -1e9
-    best_p, best_s = search(best_p, best_s, 0.40, 8.0, 0.20, 2.0)
-    best_p, best_s = search(best_p, best_s, 0.10, 2.0, 0.05, 0.5)
+    best_p, best_s = search(best_p, best_s, coarse_window, 8.0, 0.20, 2.0)
+    best_p, best_s = search(best_p, best_s, fine_window, 2.0, 0.05, 0.5)
     return best_p
 
 

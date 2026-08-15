@@ -40,10 +40,10 @@ ROS 选型（详见 ENV_SETUP.md）：
 
 ### M1 栅格 SLAM 原理（Python，先懂原理，10 月中旬前完成）
 
-- [ ] 跑通 `m1_slam_sim/run.py`，看懂两张地图的区别（里程计建图重影 vs 扫描匹配修正后清晰）
-- [ ] 改 `run.py` 里的 `speed_scale` / `yaw_bias`，观察漂移变大后修正是否还能跟上
-- [ ] 改 `slam.py` 里 `scan_match` 的搜索窗口，观察"窗口太小跟丢 / 太大变慢"
-- [ ] 写一篇博客：占位栅格地图 + 相关扫描匹配 = SLAM 的最小闭环
+- [x] 跑通 `m1_slam_sim/run.py`（2026-08-15 验证：RMSE 0.496m→0.315m，重影 vs 清晰对比图在 output/）
+- [x] 参数实验：`python3 m1_slam_sim/experiment.py` 自动扫描 speed_scale / yaw_bias / 搜索窗口，产出 output/m1_param_sweep.csv + 对比图（结论：漂移越大修正收益越明显，窗口小跟丢、窗口大只是变慢）
+- [x] 博客初稿：`blog/02_m1_slam_principle.md`（原理 + 两组实验 + 与 gmapping 同输入对比方法）
+- [x] 自测题参考答案：`docs/self_test_answers.md`（M1~M4 都有）
 
 自测题：
 1. 为什么只用里程计建图会重影？扫描匹配修正的到底是什么？
@@ -179,6 +179,7 @@ ROS 选型（详见 ENV_SETUP.md）：
 ## 三、复试素材检查单
 
 - [ ] M1：SLAM 对比图（`m1_slam_sim/output/m1_slam_compare.png`）
+- [ ] M1：参数实验图（`m1_slam_sim/output/m1_param_sweep.png`）
 - [ ] M2：航点跟踪轨迹图（`m2_waypoint_control/output/m2_trajectory.png`）
 - [ ] M2：控制量/误差图（`m2_waypoint_control/output/m2_control.png`）
 - [ ] M3：洋流 vs 无洋流路径对比图（`m3_path_planning/output/m3_compare.png`）

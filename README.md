@@ -29,6 +29,7 @@ uuv_navi/
 ```bash
 cd ~/uuv_navi/m1_slam_sim
 python3 run.py        # 生成 output/m1_slam_compare.png（SLAM 原理演示）
+python3 experiment.py # 参数实验：漂移/搜索窗口对建图质量的影响（约 5 分钟）
 
 cd ~/uuv_navi/m2_waypoint_control
 python3 run.py        # 生成 output/m2_trajectory.png 和 m2_control.png
