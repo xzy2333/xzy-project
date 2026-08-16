@@ -52,6 +52,10 @@ def main():
     duration = 45.0
     n = int(duration / dt)
     scan_interval = 5
+    # 扫描消息的"回放时间"比其时间戳晚 0.2s：保证 gmapping 的 MessageFilter
+    # 处理该帧时，对应时间的 /tf 已进入 tf1 缓冲（rosbag 同时间戳跨话题
+    # 投递顺序不定，可能导致 "MessageFilter Dropped 100%"）。
+    scan_delay = 0.2
 
     px, py, pyaw = 2.0, 2.0, 0.0
     ox, oy, oyaw = 2.0, 2.0, 0.0
@@ -59,7 +63,10 @@ def main():
 
     bag_path = os.path.join("output", "m1_synthetic.bag")
 
-    # 静态变换：base_footprint -> laser（机器人固定安装，写一次即可）
+    # 静态变换：base_footprint -> laser（机器人固定安装）
+    # 必须发到 /tf_static：tf1/tf2 都把它当"任意时刻有效"；
+    # 若发在 /tf 且只写一次，tf1 只在那个时间戳有效，gmapping 的
+    # MessageFilter 按扫描时间戳查询会全部外推失败（Dropped 100%）。
     ltf = TransformStamped()
     ltf.header = Header(stamp=rospy.Time.from_sec(t0 + 0.1),
                         frame_id="base_footprint")
@@ -69,6 +76,10 @@ def main():
     ltf.transform.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
 
     with rosbag.Bag(bag_path, "w") as bag:
+        static_tf = TFMessage()
+        static_tf.transforms.append(ltf)
+        bag.write("/tf_static", static_tf, t=rospy.Time.from_sec(t0 + 0.1))
+
         # 从 t=0.1 开始，避免 t=0 的无效时间戳让 rosbag/gmapping 拒收
         for i in range(1, n):
             t = i * dt
@@ -109,6 +120,15 @@ def main():
             odom_tf.transform.translation.y = oy
             odom_tf.transform.rotation = yaw_to_quat(oyaw)
             tf_msg.transforms.append(odom_tf)
+            # 静态变换每帧也带一份（防御：万一 /tf_static 单条消息漏接，
+            # tf1 仍能在每帧时间戳上解析 laser 帧）
+            laser_tf = TransformStamped()
+            laser_tf.header = Header(stamp=stamp, frame_id="base_footprint")
+            laser_tf.child_frame_id = "laser"
+            laser_tf.transform.translation.x = 0.16
+            laser_tf.transform.translation.z = 0.10
+            laser_tf.transform.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
+            tf_msg.transforms.append(laser_tf)
             bag.write("/tf", tf_msg, t=stamp)
 
             # 真值位姿（分析用，不喂给 gmapping）
@@ -132,11 +152,8 @@ def main():
                 scan.range_min = 0.1
                 scan.range_max = max_range
                 scan.ranges = [float(min(r, max_range)) for r in ranges]
-                bag.write("/scan", scan, t=stamp)
+                bag.write("/scan", scan, t=stamp + rospy.Duration(scan_delay))
 
-        static_tf = TFMessage()
-        static_tf.transforms.append(ltf)
-        bag.write("/tf", static_tf, t=rospy.Time.from_sec(t0 + 0.1))
 
     print("已生成 %s（时间戳起点 %.1fs）" % (bag_path, t0))
 if __name__ == "__main__":

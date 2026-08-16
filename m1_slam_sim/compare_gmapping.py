@@ -12,11 +12,12 @@
     cd m1_slam_sim && python3 compare_gmapping.py            # 只跑 M1 侧
     cd m1_slam_sim && python3 compare_gmapping.py --with-gmapping
 
-注意：gmapping 的消息过滤器依赖 tf1。某些容器/沙箱环境里 tf1 收不到 /tf，
-会出现 "MessageFilter Dropped 100%"（本机验证为环境问题，tf2 正常）。
-遇到时改用真机 Gazebo 实时建图（turtlebot3 环境已跑通），
-存出 gmapping_map.pgm 后再跑本脚本的对比部分；或先跑 replay_live.py
-实时重放同一份数据给 gmapping（同样依赖环境 tf1 是否正常）。
+注意：
+- 静态变换必须写在 /tf_static（make_ros_bag.py 已处理）：tf1 只把 /tf_static
+  当作"任意时刻有效"，写在 /tf 会按时间戳生效，gmapping 的 MessageFilter
+  按扫描时间查询时全部外推失败（Dropped 100%）。
+- gmapping 的参数名是 map_frame / odom_frame / base_frame（不是 *_frame_id）。
+- 回放用较低倍率（--rate 2），避免 /tf 与 /scan 同时间戳时的投递竞态。
 """
 
 import argparse
@@ -90,6 +91,34 @@ def occupied_mask(img):
     return img < 100
 
 
+def align_offset(a, b):
+    """在 ±4m（40 格）窗口内穷举平移，找 b 与 a 占据格交集最大的偏移。
+    两帧地图的坐标差只可能来自建图起始位姿，量级很小，限界可避免 FFT 伪峰。"""
+    max_cells = 40
+    best = (0, 0, -1)
+    for dr in range(-max_cells, max_cells + 1):
+        for dc in range(-max_cells, max_cells + 1):
+            s = shift_mask(b, dr, dc)
+            score = int((a & s).sum())
+            if score > best[2]:
+                best = (dr, dc, score)
+    return best[0], best[1]
+
+
+def shift_mask(mask, dr, dc):
+    """把 mask 平移 (dr, dc) 个格子（超界部分置 0，不做循环卷绕）。"""
+    out = np.zeros_like(mask)
+    H, W = mask.shape
+    src_r0, src_c0 = max(0, -dr), max(0, -dc)
+    dst_r0, dst_c0 = max(0, dr), max(0, dc)
+    h = min(H - src_r0, H - dst_r0)
+    w = min(W - src_c0, W - dst_c0)
+    if h > 0 and w > 0:
+        out[dst_r0:dst_r0 + h, dst_c0:dst_c0 + w] = \
+            mask[src_r0:src_r0 + h, src_c0:src_c0 + w]
+    return out
+
+
 def run_cmd(cmd, env, timeout=60, shell=True):
     return subprocess.run(cmd, shell=shell, env=env, timeout=timeout,
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -121,15 +150,17 @@ def run_gmapping(bag_path, out_prefix):
         run_cmd("rosparam set /use_sim_time true", env, timeout=10)
         gm = subprocess.Popen(
             ["rosrun", "gmapping", "slam_gmapping", "scan:=/scan",
-             "_frame_id:=map", "_odom_frame_id:=odom",
-             "_base_frame_id:=base_footprint", "_delta:=0.1",
-             "_maxUrange:=8.0", "_maxRange:=8.0", "_minimumScore:=30"],
+             "_map_frame:=map", "_odom_frame:=odom",
+             "_base_frame:=base_footprint", "_delta:=0.1",
+             "_maxUrange:=8.0", "_maxRange:=8.0", "_minimumScore:=30",
+             "_particles:=80", "_linearUpdate:=0.4", "_angularUpdate:=0.2",
+             "_srr:=0.05", "_srt:=0.1", "_str:=0.05", "_stt:=0.1"],
             env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         procs.append(gm)
         time.sleep(4)
         print("[gmapping] slam_gmapping 已启动，回放 bag ...")
 
-        run_cmd("rosbag play --clock --rate 4 %s" % bag_path, env,
+        run_cmd("rosbag play --clock --rate 2 %s" % bag_path, env,
                 timeout=180)
         time.sleep(3)
 
@@ -175,12 +206,18 @@ def main():
     if args.with_gmapping:
         run_gmapping(bag_path, os.path.join("output", "gmapping_map"))
 
-    # 4. 对比出图
+    # 4. 对比出图（两张地图先按占据格 FFT 互相关对齐，再算指标）
     m1_img = load_pgm(os.path.join("output", "m1_map.pgm"))
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-    axes[0].imshow(np.flipud(m1_img), cmap="gray_r", vmin=0, vmax=255,
-                   origin="lower", extent=[0, 14, 0, 14])
-    axes[0].set_title("M1 手写 SLAM")
+    out_res = 0.1
+    lo, hi = -10.0, 24.0
+    n = int((hi - lo) / out_res)
+    common_origin = [lo, lo]
+    m1_rs = resample_map(m1_img, 0.1, [0.0, 0.0], out_res, common_origin,
+                         (n, n))
+    axes[0].imshow(np.flipud(m1_rs), cmap="gray_r", vmin=0, vmax=255,
+                   origin="lower", extent=[lo, hi, lo, hi])
+    axes[0].set_title("M1 hand-written SLAM")
 
     gm_path = os.path.join("output", "gmapping_map.pgm")
     if os.path.exists(gm_path):
@@ -191,19 +228,27 @@ def main():
             meta = _yaml.safe_load(f)
         gm_res = float(meta["resolution"])
         gm_origin = [float(v) for v in meta["origin"][:2]]
-        out_shape = (140, 140)
-        gm_rs = resample_map(gm_img, gm_res, gm_origin, 0.1, [0.0, 0.0],
-                             out_shape)
-        m1_rs = resample_map(m1_img, 0.1, [0.0, 0.0], 0.1, [0.0, 0.0],
-                             out_shape)
-        known = (m1_rs < 254) & (gm_rs < 254)
-        agree = np.mean(occupied_mask(m1_rs[known]) ==
-                        occupied_mask(gm_rs[known])) if known.any() else 0.0
-        gm_iou = iou(occupied_mask(m1_rs), occupied_mask(gm_rs))
-        axes[1].imshow(np.flipud(gm_rs), cmap="gray_r", vmin=0, vmax=255,
-                       origin="lower", extent=[0, 14, 0, 14])
-        axes[1].set_title("gmapping")
-        print("[对比] 占据格一致率 %.3f，占据格 IoU %.3f" % (agree, gm_iou))
+        gm_rs = resample_map(gm_img, gm_res, gm_origin, out_res,
+                             common_origin, (n, n))
+        occ1 = occupied_mask(m1_rs)
+        occg = occupied_mask(gm_rs)
+        dr, dc = align_offset(occ1, occg)
+        gm_occ_al = shift_mask(occg, dr, dc)
+        gm_known_al = shift_mask(gm_rs < 254, dr, dc)
+        both = (m1_rs < 254) & gm_known_al
+        agree = np.mean(occupied_mask(m1_rs[both]) ==
+                        gm_occ_al[both]) if both.any() else 0.0
+        inter = (occ1 & gm_occ_al).sum()
+        union = (occ1 | gm_occ_al).sum()
+        gm_iou = inter / union if union else 0.0
+        print("[对比] 对齐偏移 dx=%.2f dy=%.2f m，占据格一致率 %.3f，占据格 IoU %.3f"
+              % (dc * out_res, dr * out_res, agree, gm_iou))
+        gm_vis = np.full_like(gm_rs, 254)
+        gm_vis[gm_known_al & ~gm_occ_al] = 205
+        gm_vis[gm_occ_al] = 0
+        axes[1].imshow(np.flipud(gm_vis), cmap="gray_r", vmin=0, vmax=255,
+                       origin="lower", extent=[lo, hi, lo, hi])
+        axes[1].set_title("gmapping (aligned)")
     else:
         axes[1].text(0.5, 0.5, "gmapping 地图缺失\n用 --with-gmapping 运行",
                      ha="center", va="center")

@@ -54,7 +54,7 @@ def main():
     ox, oy, oyaw = 2.0, 2.0, 0.0
     wp_idx = 0
 
-    # 静态变换 base_footprint -> laser，发一次
+    # 静态变换 base_footprint -> laser：必须发 /tf_static（tf1 才当"任意时刻有效"）
     ltf = TransformStamped()
     ltf.header = Header(stamp=rospy.Time.now(), frame_id="base_footprint")
     ltf.child_frame_id = "laser"
@@ -63,7 +63,9 @@ def main():
     ltf.transform.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
     static_msg = TFMessage()
     static_msg.transforms.append(ltf)
-    tf_pub.publish(static_msg)
+    static_pub = rospy.Publisher("/tf_static", TFMessage, queue_size=1,
+                                 latch=True)
+    static_pub.publish(static_msg)
 
     for i in range(n):
         stamp = rospy.Time.now()
