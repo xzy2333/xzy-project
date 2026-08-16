@@ -1,6 +1,6 @@
 # 环境恢复指南（重装系统后使用）
 
-本文档是“清理硬盘 → 重装系统 → 恢复原样”的路线图。仓库里的 `scripts/` 会帮你自动完成大部分工作，`docs/system_backup/` 是本次装机时抓取的环境快照。
+本文档是“清理硬盘 → 重装系统 → 恢复原样”的路线图。仓库里的 `scripts/` 会帮你自动完成大部分工作，`~/env_backup/` 是本次装机时抓取的环境快照（在仓库外，不进 GitHub）。
 
 ## 0. 最重要的一条：系统版本
 
@@ -25,7 +25,7 @@ wget http://fishros.com/install -O fishros && . fishros
 
 ## 3. 项目需要的 ROS 包
 
-快照里保存了完整的已安装包列表 `docs/system_backup/apt_packages.txt`，自动恢复脚本会筛选其中的 `ros-noetic-*` 包安装：
+快照里保存了完整的已安装包列表 `~/env_backup/apt_packages.txt`，自动恢复脚本会筛选其中的 `ros-noetic-*` 包安装：
 
 ```bash
 bash scripts/restore_env.sh
@@ -39,7 +39,7 @@ bash scripts/restore_env.sh
 
 ## 4. Python 依赖
 
-`m1_slam_sim` 等模块只依赖 `numpy` 和 `matplotlib`（见 `docs/system_backup/pip_packages.txt`）：
+`m1_slam_sim` 等模块只依赖 `numpy` 和 `matplotlib`（见 `~/env_backup/pip_packages.txt`）：
 
 ```bash
 sudo apt install -y python3-numpy python3-matplotlib
@@ -47,7 +47,7 @@ sudo apt install -y python3-numpy python3-matplotlib
 
 ## 5. MVS 相机 SDK（海康，/opt/MVS）
 
-`/opt/MVS` 是海康机器视觉 SDK，不是 apt 包，需要从海康官网下载安装包重装。装好后把以下环境变量加回 `~/.bashrc`（已备份在 `docs/system_backup/bashrc_snippet.txt`）：
+`/opt/MVS` 是海康机器视觉 SDK，不是 apt 包，需要从海康官网下载安装包重装。装好后把以下环境变量加回 `~/.bashrc`（已备份在 `~/env_backup/bashrc_snippet.txt`）：
 
 ```bash
 export PATH=$PATH:/opt/MVS/bin

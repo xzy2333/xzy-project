@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 抓取当前系统环境快照，写入 docs/system_backup/，重装系统后用于恢复
+# 抓取当前系统环境快照，写入 ~/env_backup/，重装系统后用于恢复
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUT="$REPO_DIR/docs/system_backup"
+OUT="$HOME/env_backup"
 mkdir -p "$OUT"
 
 # 已安装的 apt 包（完整列表）
@@ -30,4 +30,3 @@ cp ~/.codex/models.json "$OUT/codex_models.json" 2>/dev/null || true
 codex --version > "$OUT/codex_version.txt" 2>/dev/null || true
 
 echo "环境快照已写入 $OUT"
-

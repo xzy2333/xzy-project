@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 在重装后的 Ubuntu 20.04 上恢复 ROS 相关环境（基于 docs/system_backup/ 快照）
+# 在重装后的 Ubuntu 20.04 上恢复 ROS 相关环境（基于 ~/env_backup/ 快照）
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SNAP="$REPO_DIR/docs/system_backup"
+SNAP="$HOME/env_backup"
 
 if [ ! -f "$SNAP/apt_packages.txt" ]; then
   echo "找不到快照 $SNAP，请先确认仓库完整" >&2
@@ -28,4 +28,3 @@ echo "仍需手动处理："
 echo "  1. /opt/MVS（海康 SDK，官网下载）"
 echo "  2. ~/.codex/config.toml 的 API Key"
 echo "  3. GitHub SSH 公钥"
-

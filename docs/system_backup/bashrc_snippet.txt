@@ -1,9 +1,0 @@
-export PATH=$PATH:/opt/MVS/bin:
-export MVCAM_SDK_PATH=/opt/MVS
-export MVCAM_SDK_VERSION=
-export MVCAM_COMMON_RUNENV=/opt/MVS/lib
-export MVCAM_GENICAM_CLPROTOCOL=/opt/MVS/lib/CLProtocol
-export TURTLEBOT3_MODEL=waffle_pi
-export ALLUSERSPROFILE=/opt/MVS/MVFG
-export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/lib:/opt/MVS/lib/64:/opt/MVS/lib/32:/opt/MVS/bin:$LD_LIBRARY_PATH
-source /opt/ros/noetic/setup.bash
