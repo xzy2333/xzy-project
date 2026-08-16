@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- 键盘遥控（封装官方 turtlebot3_teleop_key.launch，w/a/s/d 控制，s 停车） -->
+  <arg name="model" default="waffle_pi"/>
+  <include file="$(find turtlebot3_teleop)/launch/turtlebot3_teleop_key.launch">
+    <arg name="model" value="$(arg model)"/>
+  </include>
+</launch>

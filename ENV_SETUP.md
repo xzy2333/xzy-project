@@ -55,30 +55,33 @@ sudo apt install -y ros-noetic-turtlebot3 ros-noetic-turtlebot3-simulations \
 
 ### 4.2 跑通"车仿真 + SLAM 建图 + RViz"（三个终端）
 
+> 下面的指令都走项目自定义 launch（`~/xzy-project/launch/`），底层封装官方包，
+> 对照表见 [launch/README.md](launch/README.md)。
+
 ```bash
 # 终端 1：仿真世界
 export TURTLEBOT3_MODEL=waffle_pi
-roslaunch turtlebot3_gazebo turtlebot3_world.launch
+roslaunch ~/xzy-project/launch/simulation_world.launch
 
 # 终端 2：SLAM 建图（默认 gmapping，会自动打开 RViz）
 export TURTLEBOT3_MODEL=waffle_pi
-roslaunch turtlebot3_slam turtlebot3_slam.launch
+roslaunch ~/xzy-project/launch/mapping.launch
 
 # 终端 3：键盘遥控，边开边建图
 export TURTLEBOT3_MODEL=waffle_pi
-roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
+roslaunch ~/xzy-project/launch/teleop_keyboard.launch
 ```
 
 建图完成保存：
 
 ```bash
-rosrun map_server map_saver -f ~/map
+roslaunch ~/xzy-project/launch/save_map.launch
 ```
 
 导航（RViz 里点 2D Nav Goal）：
 
 ```bash
-roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=$HOME/map.yaml
+roslaunch ~/xzy-project/launch/navigation.launch map_file:=$HOME/xzy-project/maps/map.yaml
 ```
 
 ### 4.3 关于 Cartographer
@@ -96,7 +99,7 @@ rospack find turtlebot3_gazebo   # 显示路径说明装好了
 
 ## 5. 备用：ROS2 Humble（Docker）
 
-- 容器配置已写好：`cd ~/uuv_navi/docker && ./run.sh bash`
+- 容器配置已写好：`cd ~/xzy-project/docker && ./run.sh bash`
 - 用途：Nav2、slam_toolbox、Stonefish、多车集群——ROS2 的主场
 - 注意：**ROS1 和 ROS2 不要在同一终端同时 source**（本机终端默认已 source Noetic，进容器后是独立的）
 
@@ -106,4 +109,3 @@ rospack find turtlebot3_gazebo   # 显示路径说明装好了
 - 本机终端已自动 source Noetic（`ROS_DISTRO=noetic`），不用手动 source
 - 以后接真机做多机时，ROS1 要配 `ROS_MASTER_URI`
 - 想用 Cartographer：Noetic 先用 Gmapping 替代，或直接上 ROS2 容器
-

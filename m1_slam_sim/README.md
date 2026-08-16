@@ -9,7 +9,7 @@
 运行：
 
 ```bash
-cd ~/uuv_navi/m1_slam_sim
+cd ~/xzy-project/m1_slam_sim
 python3 run.py
 ```
 

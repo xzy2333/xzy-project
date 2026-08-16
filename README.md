@@ -1,4 +1,4 @@
-# uuv_navi —— 面向哈工程青岛基地（闫金金老师方向）的仿真项目
+# xzy-project —— 面向哈工程青岛基地（闫金金老师方向）的仿真项目
 
 目标：按"先车后船"主线，用纯电脑仿真把无人系统的四层关键技术（**感知→规划→控制→协同**）先在小车上跑通，再逐个迁移到水面/水下。
 
@@ -7,7 +7,7 @@
 ## 目录结构
 
 ```
-uuv_navi/
+xzy-project/
 ├── CHECKLIST.md              # 技术栈清单（勾选用，最重要）
 ├── m1_slam_sim/              # 感知：手写 2D 栅格 SLAM（先懂原理）
 ├── m2_waypoint_control/      # 控制：LOS 制导 + PID 航点跟踪
@@ -27,17 +27,17 @@ uuv_navi/
 ## 快速开始（不需要 ROS，今天就能跑）
 
 ```bash
-cd ~/uuv_navi/m1_slam_sim
+cd ~/xzy-project/m1_slam_sim
 python3 run.py        # 生成 output/m1_slam_compare.png（SLAM 原理演示）
 python3 experiment.py # 参数实验：漂移/搜索窗口对建图质量的影响（约 5 分钟）
 
-cd ~/uuv_navi/m2_waypoint_control
+cd ~/xzy-project/m2_waypoint_control
 python3 run.py        # 生成 output/m2_trajectory.png 和 m2_control.png
 
-cd ~/uuv_navi/m3_path_planning
+cd ~/xzy-project/m3_path_planning
 python3 run.py        # 生成 output/m3_compare.png
 
-cd ~/uuv_navi/m4_swarm
+cd ~/xzy-project/m4_swarm
 python3 run.py        # 生成 output/m4_formation.png
 ```
 
@@ -62,7 +62,7 @@ python3 run.py        # 生成 output/m4_formation.png
 ```bash
 sudo apt update && sudo apt install -y docker.io
 sudo usermod -aG docker $USER   # 然后注销重登
-cd ~/uuv_navi/docker
+cd ~/xzy-project/docker
 ./run.sh bash                   # 进入 ROS2 Humble 容器
 ```
 

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- 导航：AMCL + move_base + RViz（封装官方 turtlebot3_navigation.launch）
+       默认加载本项目保存的地图，可用 map_file:=路径 覆盖 -->
+  <arg name="model" default="waffle_pi"/>
+  <arg name="map_file" default="$(env HOME)/xzy-project/maps/map.yaml"/>
+  <include file="$(find turtlebot3_navigation)/launch/turtlebot3_navigation.launch">
+    <arg name="model" value="$(arg model)"/>
+    <arg name="map_file" value="$(arg map_file)"/>
+  </include>
+</launch>

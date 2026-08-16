@@ -7,7 +7,7 @@
 前提：Docker 装好（见 [README](../README.md)），进入容器：
 
 ```bash
-cd ~/uuv_navi/docker && ./run.sh bash
+cd ~/xzy-project/docker && ./run.sh bash
 ```
 
 ## A1：Gazebo 里让小车动起来

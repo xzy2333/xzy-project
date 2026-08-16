@@ -1,6 +1,6 @@
 # TurtleBot3 在 Gazebo 中跑通 SLAM 建图与自主导航（ROS1 Noetic 实战 + 踩坑记录）
 
-> 项目：[uuv_navi](../README.md) · 环境：Ubuntu 20.04 + ROS1 Noetic + Gazebo 11 · 车型：waffle_pi
+> 项目：[xzy-project](../README.md) · 环境：Ubuntu 20.04 + ROS1 Noetic + Gazebo 11 · 车型：waffle_pi
 > 状态：已跑通（2026-08-09）· 配套视频清单见 [VIDEO_CHECKLIST.md](VIDEO_CHECKLIST.md)
 
 ## 1. 背景
@@ -36,32 +36,34 @@ sudo apt install -y ros-noetic-turtlebot3 ros-noetic-turtlebot3-simulations \
 
 开三个终端，按顺序执行（每个新终端都要先设车型环境变量）：
 
+> 以下指令是项目自定义 launch（封装官方 turtlebot3 包），对照表见 [launch/README.md](../launch/README.md)。
+
 **终端 1 —— 仿真世界**
 
 ```bash
 export TURTLEBOT3_MODEL=waffle_pi
-roslaunch turtlebot3_gazebo turtlebot3_world.launch
+roslaunch ~/xzy-project/launch/simulation_world.launch
 ```
 
 **终端 2 —— SLAM 建图（自动弹出 RViz）**
 
 ```bash
 export TURTLEBOT3_MODEL=waffle_pi
-roslaunch turtlebot3_slam turtlebot3_slam.launch
+roslaunch ~/xzy-project/launch/mapping.launch
 ```
 
 **终端 3 —— 键盘遥控**
 
 ```bash
 export TURTLEBOT3_MODEL=waffle_pi
-roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
+roslaunch ~/xzy-project/launch/teleop_keyboard.launch
 ```
 
 `w` 前进、`a/d` 转向、`s` 停车，让车在房间里慢慢绕一圈，RViz 里的栅格地图会随激光扫描一点点"长"出来。转完保存地图：
 
 ```bash
-mkdir -p ~/uuv_navi/maps
-rosrun map_server map_saver -f ~/uuv_navi/maps/map
+mkdir -p ~/xzy-project/maps
+roslaunch ~/xzy-project/launch/save_map.launch
 ```
 
 生成 `map.pgm`（栅格图像）+ `map.yaml`（地图元数据）。
@@ -72,7 +74,7 @@ rosrun map_server map_saver -f ~/uuv_navi/maps/map
 
 ```bash
 export TURTLEBOT3_MODEL=waffle_pi
-roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=$HOME/uuv_navi/maps/map.yaml
+roslaunch ~/xzy-project/launch/navigation.launch map_file:=$HOME/xzy-project/maps/map.yaml
 ```
 
 RViz 弹出后按顺序做两件事：
@@ -101,12 +103,12 @@ ERROR: failed to open image file "/home/xzy/map.pgm": Couldn't open /home/xzy/ma
 [map_server-2] process has died [pid ..., exit code 255]
 ```
 
-原因：`map.yaml` 里的 `image:` 是**绝对路径**。把 `map.pgm`/`map.yaml` 从家目录搬进 `uuv_navi/maps/` 时只搬了文件、没改 yaml 里的路径，map_server 按旧路径找不到图片，直接退出。
+原因：`map.yaml` 里的 `image:` 是**绝对路径**。把 `map.pgm`/`map.yaml` 从家目录搬进 `xzy-project/maps/` 时只搬了文件、没改 yaml 里的路径，map_server 按旧路径找不到图片，直接退出。
 
 **结论**：`image:` 路径必须始终指向 `map.pgm` 的实际位置，两个文件必须一起搬。搬完要检查：
 
 ```bash
-cat ~/uuv_navi/maps/map.yaml   # 应显示 image: /home/xzy/uuv_navi/maps/map.pgm
+cat ~/xzy-project/maps/map.yaml   # 应显示 image: /home/xzy/xzy-project/maps/map.pgm
 ```
 
 ### 坑 3：RViz 里车在地图中心，Gazebo 里车却在出发点

@@ -14,5 +14,5 @@ experimental_bearer_token = "<REDACTED>"
 [projects."/home/xzy"]
 trust_level = "trusted"
 
-[projects."/home/xzy/uuv_navi"]
+[projects."/home/xzy/xzy-project"]
 trust_level = "trusted"

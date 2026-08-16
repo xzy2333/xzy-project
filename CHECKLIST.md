@@ -70,7 +70,7 @@ ROS 选型（详见 ENV_SETUP.md）：
 ### ROS1 主线（已完成，2026-08-09）
 
 - [x] Gazebo 仿真小车动起来（turtlebot3_world）
-- [x] Gmapping 建图 + map_saver 保存地图（`uuv_navi/maps/`）
+- [x] Gmapping 建图 + map_saver 保存地图（`xzy-project/maps/`）
 - [x] AMCL 定位 + move_base 导航跑通（初始位姿 → 目标点 → 自动到达）
 - [x] 博客初稿（`blog/01_gazebo_slam_navigation.md`）
 - [ ] 演示视频录制（见 `blog/VIDEO_CHECKLIST.md`）
@@ -86,9 +86,9 @@ ROS 选型（详见 ENV_SETUP.md）：
 #### A1 世界设计（Gazebo Building Editor）
 
 - [ ] 规划场景：定尺寸（建议 8~12m 见方）、墙和障碍物布局（模拟实验室走廊或复试想讲的场景）
-- [ ] 用 Gazebo Building Editor 搭墙/门/障碍物，导出 `.world` 到 `uuv_navi/worlds/`（world 文件入库，别只留在 `~/.gazebo`）
+- [ ] 用 Gazebo Building Editor 搭墙/门/障碍物，导出 `.world` 到 `xzy-project/worlds/`（world 文件入库，别只留在 `~/.gazebo`）
 - [ ] 在 `.world` 里给 TurtleBot3 设置 spawn 坐标，并记录建图起点（导航初始位姿要用同一个点）
-- [ ] 启动验证：`roslaunch turtlebot3_gazebo turtlebot3_world.launch world_file:=<自建世界>` 正常加载，激光有反射
+- [ ] 启动验证：`roslaunch ~/xzy-project/launch/simulation_world.launch world_file:=<自建世界路径>` 正常加载，激光有反射
 - [ ] 存一张 Gazebo 环境截图（博客/视频素材）
 
 #### A2 建图参数

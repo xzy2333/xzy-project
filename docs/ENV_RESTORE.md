@@ -70,8 +70,8 @@ source ~/.bashrc
 
 ```bash
 cd ~
-git clone git@github.com:xzy2333/xzy2333.git uuv_navi
-cd uuv_navi
+git clone git@github.com:xzy2333/xzy2333.git xzy-project
+cd xzy-project
 ```
 
 （如果以后仓库改名或迁移，用新的地址替换即可。）

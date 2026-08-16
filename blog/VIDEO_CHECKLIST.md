@@ -10,7 +10,7 @@
 - [ ] 开头 3 秒亮出项目名 + 日期（可加字幕）
 - [ ] 全程有解说（提前写稿，照着念即可）
 - [ ] 录完导出时加字幕（B 站自动字幕校对一遍也行）
-- [ ] 文件名规范：`uuv_navi_建图导航_v1.mp4`（v1/v2 递增，别覆盖）
+- [ ] 文件名规范：`xzy-project_建图导航_v1.mp4`（v1/v2 递增，别覆盖）
 - [ ] 封面：RViz 粒子云收敛 + 路径规划的截图
 
 ## 分镜脚本（以"建图 + 导航"为例）
@@ -18,11 +18,11 @@
 ### 00:00 ~ 00:15 开场
 
 - 画面：仓库 README 或项目架构图
-- 解说："大家好，这是 uuv_navi 项目——先车后船，把无人系统的建图、定位、规划、控制闭环先在小车上跑通。今天演示的是第一环：Gazebo 里的 SLAM 建图和自主导航。"
+- 解说："大家好，这是 xzy-project 项目——先车后船，把无人系统的建图、定位、规划、控制闭环先在小车上跑通。今天演示的是第一环：Gazebo 里的 SLAM 建图和自主导航。"
 
 ### 00:15 ~ 00:40 环境展示
 
-- 画面：终端执行 `roslaunch turtlebot3_gazebo turtlebot3_world.launch`，Gazebo 窗口出现小车
+- 画面：终端执行 `roslaunch ~/xzy-project/launch/simulation_world.launch`，Gazebo 窗口出现小车
 - 解说：环境是 ROS1 Noetic + Gazebo 11，车型 waffle_pi，带 360 度激光。三个终端分别负责仿真、建图、遥控。
 
 ### 00:40 ~ 02:00 建图
@@ -30,7 +30,7 @@
 - 画面：三个终端同屏（可用 tmux 分屏）：仿真 / gmapping（RViz 地图生长）/ 键盘遥控
 - 解说：按住 w 让车慢慢绕房间一圈，RViz 里栅格地图实时生长；讲解 log-odds 栅格 + 扫描匹配一句带过
 - 可选彩蛋：录一段"松开键盘车不停"的片段，解说这是仿真没有速度看门狗导致的，按 s 停车——展示真实踩坑过程
-- 收尾：`rosrun map_server map_saver -f ~/uuv_navi/maps/map`，展示生成的 map.yaml + map.pgm
+- 收尾：`rosrun map_server map_saver -f ~/xzy-project/maps/map`，展示生成的 map.yaml + map.pgm
 
 ### 02:00 ~ 03:30 导航
 

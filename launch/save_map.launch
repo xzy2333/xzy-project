@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- 保存当前 /map 为 pgm + yaml，默认存到项目 maps/ 目录 -->
+  <arg name="file" default="$(env HOME)/xzy-project/maps/map"/>
+  <node pkg="map_server" type="map_saver" name="map_saver"
+        args="-f $(arg file)" output="screen"/>
+</launch>

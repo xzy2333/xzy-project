@@ -1,4 +1,4 @@
-image: /home/xzy/uuv_navi/maps/map.pgm
+image: /home/xzy/xzy-project/maps/map.pgm
 resolution: 0.050000
 origin: [-10.000000, -10.000000, 0.000000]
 negate: 0
