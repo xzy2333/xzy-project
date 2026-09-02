@@ -19,3 +19,6 @@ install/
 .codex/
 .git/
 .gitdata/
+
+# 编辑器锁文件
+.~lock.*#
