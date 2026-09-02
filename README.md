@@ -17,7 +17,7 @@ xzy-project/
 ├── docker/                   # ROS2 Humble 容器（20.04 上用 Docker 跑）
 ├── maps/                     # ROS1 主线建图保存的地图（map.yaml + map.pgm）
 ├── blog/                     # 技术博客初稿 + 演示视频录制清单（复试素材）
-├── docs/                     # 环境恢复指南 + 系统快照（重装系统后恢复用）
+├── docs/                     # 环境恢复指南 + 自测题答案等文档
 ├── scripts/                  # 环境备份 / 恢复 / Codex 备份脚本
 └── README.md
 ```
@@ -49,10 +49,10 @@ python3 run.py        # 生成 output/m4_formation.png
 
 | 时间 | 任务 |
 |---|---|
-| 8~9 月 | 跑通 m1（SLAM 原理）、m2（控制）、m3（规划），读闫老师论文做笔记 |
-| 10 月中前 | 按 ros2_car/README 跑通 turtlebot3：Gazebo 运动 + Cartographer 建图 + RViz |
+| 8 月 | **已完成**：ROS1 单车闭环（gmapping 建图 → AMCL/move_base 导航）、m1 手写 SLAM 与 gmapping 同输入对比（见 `m1_slam_sim/EXPERIMENTS.md`） |
+| 9 月 | 博客与实验证据整改、复试讲解稿；自建 Gazebo 环境 / ROS2 迁移规划 |
 | 10 月中~12 月 | 项目冻结，全力初试 |
-| 12 月考完~2 月 | m4 编队、Nav2 导航、博客 + 视频 + 简历 |
+| 12 月考完~2 月 | m2–m4 接入 ROS（当前为纯数值仿真）、ROS2/Nav2、视频 + 简历 |
 | 出分后 | 邮件联系闫老师，附 GitHub + 视频 |
 
 ## ROS2 怎么用（Ubuntu 20.04）
@@ -70,7 +70,8 @@ cd ~/xzy-project/docker
 
 ## 下一步
 
-1. 打开 CHECKLIST.md，先勾 m1/m2/m3 三项并跑通
-2. 每跑通一个模块，写一篇博客（这是复试素材）
-3. ROS1 主线博客初稿已就位：`blog/01_gazebo_slam_navigation.md`；录视频前看 `blog/VIDEO_CHECKLIST.md`
-4. 有问题随时把报错贴给我
+1. 状态口径：**ROS1 单车闭环已完成**；m2–m4（航点控制/A* 路径/编队）目前是纯
+   数值仿真，接入 ROS 属于下一阶段，README 与博客都按此口径表述
+2. 博客与讲解稿已定稿（`blog/`），按 `blog/VIDEO_CHECKLIST.md` 录演示视频
+3. 复现实验：`cd m1_slam_sim && python3 compare_gmapping.py --with-gmapping`
+4. 重装系统恢复材料在 `~/env_backup/`（仓库外），见 `docs/ENV_RESTORE.md`

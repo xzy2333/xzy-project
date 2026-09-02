@@ -118,10 +118,13 @@ ERROR: failed to open image file "/home/xzy/map.pgm": Couldn't open /home/xzy/ma
 
 原因：`map.yaml` 里的 `image:` 是**绝对路径**。把 `map.pgm`/`map.yaml` 从家目录搬进 `xzy-project/maps/` 时只搬了文件、没改 yaml 里的路径，map_server 按旧路径找不到图片，直接退出。
 
-**结论**：`image:` 路径必须始终指向 `map.pgm` 的实际位置，两个文件必须一起搬。搬完要检查：
+**结论**：`image:` 路径必须始终指向 `map.pgm` 的实际位置，两个文件必须一起搬。
+Noetic 的 map_server 会把**相对路径按 map.yaml 所在目录解析**（本机实测），
+所以最省事的写法是 `image: map.pgm`（两个文件同目录，搬走即用）；用绝对路径
+也行，但搬家后必须同步改。搬完检查：
 
 ```bash
-cat ~/xzy-project/maps/map.yaml   # 应显示 image: /home/xzy/xzy-project/maps/map.pgm
+cat ~/xzy-project/maps/map.yaml   # 本项目应显示 image: map.pgm（同目录相对路径）
 ```
 
 ### 坑 3：RViz 里车在地图中心，Gazebo 里车却在出发点
