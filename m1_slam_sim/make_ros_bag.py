@@ -8,6 +8,16 @@
     cd m1_slam_sim && python3 make_ros_bag.py
 
 产出：output/m1_synthetic.bag
+
+可复现与实验控制（环境变量，均有默认值）：
+    SEED          随机种子（默认 7；固定后同参数可逐位复现）
+    SPEED_SCALE   里程计距离放大系数（默认 1.02）
+    YAW_BIAS      里程计角速度偏置 rad/s（默认 0.0012）
+    ODOM_NOISE    里程计角噪声 std（默认 0.003）
+    RAY_NOISE     激光测距噪声 std（默认 0.01）
+    LASER_OFFSET  激光相对 base_footprint 的前向偏移（默认 0.16；与射线
+                  从车中心发出的约定一致时置 0）
+    BAG_PATH      bag 输出路径（默认 output/m1_synthetic.bag）
 """
 
 import os
@@ -35,8 +45,6 @@ def yaw_to_quat(yaw):
 
 def main():
     os.makedirs("output", exist_ok=True)
-    # WALL_TIME=1 时用真实墙钟时间戳（gmapping 的 tf1 接口在 sim time 下
-    # 查不到变换，会 100% 丢帧；真实时间戳 + 不回放 --clock 可绕开）
     t0 = time.time() if os.environ.get("WALL_TIME") else 0.0
     world = World(size=14.0)
     waypoints = np.array([[2.0, 2.0], [12.0, 2.0], [12.0, 12.0],
@@ -44,24 +52,26 @@ def main():
 
     v = 1.2
     max_r = 0.7
-    speed_scale = 1.02
-    yaw_bias = 0.0012
+    seed = int(os.environ.get("SEED", "7"))
+    speed_scale = float(os.environ.get("SPEED_SCALE", "1.02"))
+    yaw_bias = float(os.environ.get("YAW_BIAS", "0.0012"))
+    odom_noise = float(os.environ.get("ODOM_NOISE", "0.003"))
+    ray_noise = float(os.environ.get("RAY_NOISE", "0.01"))
+    laser_offset = float(os.environ.get("LASER_OFFSET", "0.16"))
     lidar_angles = np.radians(np.linspace(-180.0, 180.0, 181))
     max_range = 8.0
     dt = 0.1
     duration = 45.0
     n = int(duration / dt)
     scan_interval = 5
-    # 扫描消息的"回放时间"比其时间戳晚 0.2s：保证 gmapping 的 MessageFilter
-    # 处理该帧时，对应时间的 /tf 已进入 tf1 缓冲（rosbag 同时间戳跨话题
-    # 投递顺序不定，可能导致 "MessageFilter Dropped 100%"）。
     scan_delay = 0.2
+    np.random.seed(seed)
 
     px, py, pyaw = 2.0, 2.0, 0.0
     ox, oy, oyaw = 2.0, 2.0, 0.0
     wp_idx = 0
 
-    bag_path = os.path.join("output", "m1_synthetic.bag")
+    bag_path = os.environ.get("BAG_PATH", "output/m1_synthetic.bag")
 
     # 静态变换：base_footprint -> laser（机器人固定安装）
     # 必须发到 /tf_static：tf1/tf2 都把它当"任意时刻有效"；
@@ -71,7 +81,7 @@ def main():
     ltf.header = Header(stamp=rospy.Time.from_sec(t0 + 0.1),
                         frame_id="base_footprint")
     ltf.child_frame_id = "laser"
-    ltf.transform.translation.x = 0.16
+    ltf.transform.translation.x = laser_offset
     ltf.transform.translation.z = 0.10
     ltf.transform.rotation = Quaternion(0.0, 0.0, 0.0, 1.0)
 
@@ -97,7 +107,7 @@ def main():
             py += v * np.sin(pyaw) * dt
 
             dist = v * dt * speed_scale
-            oyaw += (r_cmd + yaw_bias) * dt + np.random.normal(0, 0.003)
+            oyaw += (r_cmd + yaw_bias) * dt + np.random.normal(0, odom_noise)
             ox += dist * np.cos(oyaw)
             oy += dist * np.sin(oyaw)
 
@@ -141,7 +151,8 @@ def main():
 
             if i % scan_interval == 0:
                 ranges = [world.raycast(px, py, pyaw + a, max_range) +
-                          np.random.normal(0, 0.01) for a in lidar_angles]
+                          np.random.normal(0, ray_noise)
+                          for a in lidar_angles]
                 scan = LaserScan()
                 scan.header = Header(stamp=stamp, frame_id="laser")
                 scan.angle_min = float(lidar_angles[0])

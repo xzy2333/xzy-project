@@ -21,6 +21,7 @@
 """
 
 import argparse
+import csv
 import os
 import subprocess
 import sys
@@ -119,6 +120,20 @@ def shift_mask(mask, dr, dc):
     return out
 
 
+def dilate_mask(mask, k=2):
+    """正方形膨胀 k 格：给墙线留容差，缓解"1 格错位即零重叠"问题。"""
+    out = mask.copy()
+    n = mask.shape[0]
+    for di in range(-k, k + 1):
+        for dj in range(-k, k + 1):
+            if di == 0 and dj == 0:
+                continue
+            r0, r1 = max(0, di), min(n, n + di)
+            c0, c1 = max(0, dj), min(n, n + dj)
+            out[r0:r1, c0:c1] |= mask[r0 - di:r1 - di, c0 - dj:c1 - dj]
+    return out
+
+
 def run_cmd(cmd, env, timeout=60, shell=True):
     return subprocess.run(cmd, shell=shell, env=env, timeout=timeout,
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -182,12 +197,24 @@ def main():
                     help="同时运行 gmapping 并对比（需要 ROS 环境）")
     args = ap.parse_args()
 
+    # 默认对比配置（经 E0–E2b 对照实验确定）：
+    #   带边界墙的世界（信息量充足，gmapping 与 m1 都收敛）
+    #   激光与车体中心重合（数据与 tf 一致，简化模型）
+    #   固定随机种子（可逐位复现）
+    # 复现旧的"无墙 + 前装激光"配置：WORLD_WALLS=0 LASER_OFFSET=0.16
+    os.environ.setdefault("WORLD_WALLS", "1")
+    os.environ.setdefault("LASER_OFFSET", "0.0")
+    os.environ.setdefault("SEED", "7")
+    seed = int(os.environ["SEED"])
+
     os.makedirs("output", exist_ok=True)
     world = World(size=14.0)
     bag_path = os.path.join("output", "m1_synthetic.bag")
 
     # 1. 生成 bag
-    if not os.path.exists(bag_path):
+    if args.with_gmapping or not os.path.exists(bag_path):
+        if os.path.exists(bag_path):
+            os.remove(bag_path)
         print("[m1] 生成仿真数据 bag ...")
         run_cmd("python3 make_ros_bag.py", os.environ.copy(), timeout=120)
 
@@ -195,33 +222,56 @@ def main():
     print("[m1] 运行手写 SLAM ...")
     r = simulate(world, np.array([[2.0, 2.0], [12.0, 2.0], [12.0, 12.0],
                                   [2.0, 12.0]], dtype=float),
-                 collect_map=True)
-    m1_yaml = save_map_pgm(r["map_corr"], os.path.join("output", "m1_map.pgm"))
-    truth = world_grid(world)
-    m1_iou = iou(map_occupancy(r["map_corr"]), truth)
-    print("[m1] 修正后轨迹 RMSE %.3f m，地图与真值 IoU %.3f"
-          % (r["rmse_corr"], m1_iou))
+                 collect_map=True, seed=seed)
+    save_map_pgm(r["map_corr"], os.path.join("output", "m1_map.pgm"))
+    print("[m1] seed=%d 修正后轨迹 RMSE %.3f m"
+          % (seed, r["rmse_corr"]))
 
     # 3. gmapping 侧
     if args.with_gmapping:
         run_gmapping(bag_path, os.path.join("output", "gmapping_map"))
 
-    # 4. 对比出图（两张地图先按占据格 FFT 互相关对齐，再算指标）
-    m1_img = load_pgm(os.path.join("output", "m1_map.pgm"))
+    # 4. 对比出图与指标
+    #    坐标系约定：栅格行 0 = y 最小（世界 y 向上）；pgm 行 0 = 顶部，
+    #    因此读入后要先 flipud 再进统一的公共网格。
+    m1_img = np.flipud(load_pgm(os.path.join("output", "m1_map.pgm")))
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     out_res = 0.1
     lo, hi = -10.0, 24.0
     n = int((hi - lo) / out_res)
     common_origin = [lo, lo]
-    m1_rs = resample_map(m1_img, 0.1, [0.0, 0.0], out_res, common_origin,
-                         (n, n))
-    axes[0].imshow(np.flipud(m1_rs), cmap="gray_r", vmin=0, vmax=255,
+    # 真值栅格：占据=0（黑）、空闲=255，行 0 = y 最小
+    truth = (1 - world_grid(world).astype(np.uint8)) * 255
+    truth_rs = resample_map(truth, out_res, [0.0, 0.0], out_res,
+                            common_origin, (n, n))
+    m1_rs = resample_map(m1_img, out_res, [0.0, 0.0], out_res,
+                         common_origin, (n, n))
+    axes[0].imshow(m1_rs, cmap="gray_r", vmin=0, vmax=255,
                    origin="lower", extent=[lo, hi, lo, hi])
     axes[0].set_title("M1 hand-written SLAM")
 
     gm_path = os.path.join("output", "gmapping_map.pgm")
+    occ_t = truth_rs < 100
+    occ1 = m1_rs < 100
+    occ1_al = occ1  # m1 的世界原点 == 真值原点，无需平移
+
+    metrics = {"seed": seed, "m1_rmse_m": round(r["rmse_corr"], 4)}
+
+    def report(name, a, b, key):
+        raw = iou(a, b)
+        dil = iou(dilate_mask(a, 2), b)
+        dil2 = iou(dilate_mask(a, 2), dilate_mask(b, 2))
+        metrics[key + "_raw"] = round(raw, 4)
+        metrics[key + "_dil2"] = round(dil, 4)
+        metrics[key + "_dil2both"] = round(dil2, 4)
+        print("  %s: raw IoU=%.3f | 容差2格 IoU=%.3f | 双侧容差 IoU=%.3f"
+              % (name, raw, dil, dil2))
+
+    print("[指标] 世界=带墙(14m) 种子=%d" % seed)
+    report("m1 vs truth", occ1_al, occ_t, "m1_vs_truth")
+
     if os.path.exists(gm_path):
-        gm_img = load_pgm(gm_path)
+        gm_img = np.flipud(load_pgm(gm_path))
         gm_yaml = os.path.join("output", "gmapping_map.yaml")
         import yaml as _yaml
         with open(gm_yaml) as f:
@@ -230,35 +280,42 @@ def main():
         gm_origin = [float(v) for v in meta["origin"][:2]]
         gm_rs = resample_map(gm_img, gm_res, gm_origin, out_res,
                              common_origin, (n, n))
-        occ1 = occupied_mask(m1_rs)
         occg = occupied_mask(gm_rs)
-        dr, dc = align_offset(occ1, occg)
-        gm_occ_al = shift_mask(occg, dr, dc)
-        gm_known_al = shift_mask(gm_rs < 254, dr, dc)
-        both = (m1_rs < 254) & gm_known_al
-        agree = np.mean(occupied_mask(m1_rs[both]) ==
-                        gm_occ_al[both]) if both.any() else 0.0
-        inter = (occ1 & gm_occ_al).sum()
-        union = (occ1 | gm_occ_al).sum()
-        gm_iou = inter / union if union else 0.0
-        print("[对比] 对齐偏移 dx=%.2f dy=%.2f m，占据格一致率 %.3f，占据格 IoU %.3f"
-              % (dc * out_res, dr * out_res, agree, gm_iou))
-        gm_vis = np.full_like(gm_rs, 254)
-        gm_vis[gm_known_al & ~gm_occ_al] = 205
-        gm_vis[gm_occ_al] = 0
-        axes[1].imshow(np.flipud(gm_vis), cmap="gray_r", vmin=0, vmax=255,
+        # 以真值为基准做有界对齐（两套 map 原点差只可能来自起始位姿）
+        dr_t, dc_t = align_offset(occ_t, occg)
+        occg_al = shift_mask(occg, dr_t, dc_t)
+        metrics["gm_align_dx_m"] = round(dc_t * out_res, 2)
+        metrics["gm_align_dy_m"] = round(dr_t * out_res, 2)
+        report("gmapping vs truth (对齐 %.2f,%.2f m)"
+               % (dc_t * out_res, dr_t * out_res), occg_al, occ_t,
+               "gm_vs_truth")
+        dr_m, dc_m = align_offset(occ1_al, occg)
+        occg_al_m = shift_mask(occg, dr_m, dc_m)
+        report("m1 vs gmapping (对齐 %.2f,%.2f m)"
+               % (dc_m * out_res, dr_m * out_res), occ1_al, occg_al_m,
+               "m1_vs_gm")
+        gm_vis = np.where(occg_al, 0, np.where(gm_rs < 254, 205, 254))
+        axes[1].imshow(gm_vis, cmap="gray_r", vmin=0, vmax=255,
                        origin="lower", extent=[lo, hi, lo, hi])
         axes[1].set_title("gmapping (aligned)")
     else:
         axes[1].text(0.5, 0.5, "gmapping 地图缺失\n用 --with-gmapping 运行",
                      ha="center", va="center")
         axes[1].set_title("gmapping（未运行）")
-        print("[对比] 未检测到 gmapping 地图，跳过对比（"
+        print("[指标] 未检测到 gmapping 地图，跳过对比（"
               "运行: python3 compare_gmapping.py --with-gmapping）")
 
     plt.tight_layout()
     plt.savefig(os.path.join("output", "m1_vs_gmapping.png"), dpi=150)
     plt.close(fig)
+    csv_path = os.path.join("output", "comparison_metrics.csv")
+    write_header = not os.path.exists(csv_path)
+    with open(csv_path, "a", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=sorted(metrics))
+        if write_header:
+            w.writeheader()
+        w.writerow(metrics)
+    print("指标已追加到 %s" % csv_path)
     print("已保存 output/m1_vs_gmapping.png")
 
 
