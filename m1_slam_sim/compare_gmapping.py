@@ -197,7 +197,7 @@ def main():
                     help="同时运行 gmapping 并对比（需要 ROS 环境）")
     args = ap.parse_args()
 
-    # 默认对比配置（经 E0–E2b 对照实验确定）：
+    # 默认对比配置（经 E1–E5 对照实验确定，见 EXPERIMENTS.md）：
     #   带边界墙的世界（信息量充足，gmapping 与 m1 都收敛）
     #   激光与车体中心重合（数据与 tf 一致，简化模型）
     #   固定随机种子（可逐位复现）
