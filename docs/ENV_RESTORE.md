@@ -78,11 +78,16 @@ cd xzy-project
 
 ## 8. Codex CLI（可选，用于恢复“这个助手”本身）
 
-Codex 是通过 npm 全局安装的（`/usr/bin/codex -> /usr/lib/node_modules/@openai/codex/bin/codex.js`）：
+Codex 装在**用户目录**即可，不需要 sudo（2026-09-12 起从系统级 `/usr` 改为用户级 `~/.local`，避免出现两份安装、版本还不一致的情况）：
 
 ```bash
-sudo npm install -g @openai/codex
+npm config set prefix "$HOME/.local"   # 只需设一次，会写入 ~/.npmrc
+npm install -g @openai/codex
 ```
+
+装好后是 `~/.local/bin/codex`。`~/.profile` / `~/.bashrc` 已经把 `~/.local/bin` 加进 PATH，且排在 `/usr/bin` 前面，所以终端里直接敲 `codex` 用的就是这份。
+
+以后升级直接用 `codex update`（npm 前缀指向用户目录，不需要 sudo）。
 
 然后恢复配置与历史（见 `scripts/backup_codex.sh` 生成的 `~/codex_backup.tar.gz`）：
 
