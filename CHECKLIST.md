@@ -85,10 +85,14 @@ ROS 选型（详见 ENV_SETUP.md）：
 
 #### A1 世界设计（Gazebo Building Editor）
 
-- [ ] 规划场景：定尺寸（建议 8~12m 见方）、墙和障碍物布局（模拟实验室走廊或复试想讲的场景）
-- [ ] 用 Gazebo Building Editor 搭墙/门/障碍物，导出 `.world` 到 `xzy-project/worlds/`（world 文件入库，别只留在 `~/.gazebo`）
-- [ ] 在 `.world` 里给 TurtleBot3 设置 spawn 坐标，并记录建图起点（导航初始位姿要用同一个点）
-- [ ] 启动验证：`roslaunch ~/xzy-project/launch/simulation_world.launch world_file:=<自建世界路径>` 正常加载，激光有反射
+- [x] 规划场景：定尺寸（8 m × 6 m）、墙和障碍物布局（隔断墙带门洞 + 柜子/货箱/立柱，刻意不对称）
+- [x] 骨架已生成：`worlds/xzy_lab.world`（手写 SDF，不依赖外部 mesh；**已完成无头加载验证**：
+      15 个物体全部加载、车正常生成、激光 360 束中 285 束有效回波）
+- [x] 在 `.world` 里给 TurtleBot3 设置 spawn 坐标（-2.0, -0.5，已确认不与障碍重叠），
+      建图起点与导航初始位姿用同一个点
+- [x] 启动验证通过：`roslaunch ~/xzy-project/launch/simulation_world.launch
+      world_file:=$HOME/xzy-project/worlds/xzy_lab.world`（加 `gui:=false` 可无界面）
+- [ ] 按自己的需要调整布局（直接改 `worlds/xzy_lab.world` 里的 pose/size 数字，文件头有说明）
 - [ ] 存一张 Gazebo 环境截图（博客/视频素材）
 
 #### A2 建图参数

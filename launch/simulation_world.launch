@@ -1,17 +1,19 @@
 <?xml version="1.0"?>
 <launch>
-  <!-- 启动仿真世界：默认官方 turtlebot3_world，可用 world_file:=路径 换成自建世界 -->
+  <!-- 启动仿真世界：默认官方 turtlebot3_world，可用 world_file:=路径 换成自建世界；
+       gui:=false 可无界面运行（服务器/自检时用） -->
   <arg name="model" default="waffle_pi"/>
   <arg name="world_file" default="$(find turtlebot3_gazebo)/worlds/turtlebot3_world.world"/>
   <arg name="x_pos" default="-2.0"/>
   <arg name="y_pos" default="-0.5"/>
   <arg name="z_pos" default="0.0"/>
+  <arg name="gui" default="true"/>
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(arg world_file)"/>
     <arg name="paused" value="false"/>
     <arg name="use_sim_time" value="true"/>
-    <arg name="gui" value="true"/>
+    <arg name="gui" value="$(arg gui)"/>
     <arg name="headless" value="false"/>
     <arg name="debug" value="false"/>
   </include>

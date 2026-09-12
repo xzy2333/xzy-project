@@ -1,0 +1,247 @@
+<?xml version="1.0" ?>
+<!--
+  xzy_lab.world —— 自建实验室场景（里程碑 A 的骨架）
+
+  设计要点：
+  1. 房间 8 m × 6 m（x ∈ [-4, 4]，y ∈ [-3, 3]），外墙厚 0.15 m、高 0.8 m。
+     尺寸配合 TurtleBot3 激光 3.5 m 量程：从出生点 (-2, -0.5) 看出去，四面墙和
+     障碍基本都在量程内，避免"回波全是无命中 → SLAM 信息匮乏发散"（见
+     m1_slam_sim/EXPERIMENTS.md 的退化环境对照）；
+  2. 内部特征刻意**不对称**：带门洞的隔断墙、不同尺寸的柜子/货箱、间距不等的
+     立柱、不同半径的圆柱——避免观测重复导致的定位歧义；
+  3. 只用 box/cylinder 基本几何体，不依赖外部 mesh，clone 下来即可加载。
+
+  怎么改（直接改数字即可）：
+  - 位置/朝向：<pose>x y z roll pitch yaw</pose>
+  - 尺寸：<size>x y z</size>（box）或 <radius>/<length>（cylinder）
+  - 加障碍：复制任意 <model ...> ... </model> 段，改 name 与 pose
+  - 改完启动：
+      roslaunch ~/xzy-project/launch/simulation_world.launch \
+          world_file:=$HOME/xzy-project/worlds/xzy_lab.world
+  提醒：小车默认生成在 (-2.0, -0.5)，改布局时别把障碍放在这个点上。
+-->
+<sdf version="1.6">
+  <world name="xzy_lab">
+
+    <!-- 光照与地面 -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    <scene>
+      <ambient>0.6 0.6 0.6 1</ambient>
+      <background>0.70 0.75 0.80 1</background>
+      <shadows>true</shadows>
+    </scene>
+
+    <!-- ================= 外墙 ================= -->
+    <model name="wall_south">
+      <static>true</static>
+      <pose>0 -3.0 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>8.3 0.15 0.8</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>8.3 0.15 0.8</size></box></geometry>
+          <material><ambient>0.7 0.7 0.7 1</ambient><diffuse>0.8 0.8 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_north">
+      <static>true</static>
+      <pose>0 3.0 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>8.3 0.15 0.8</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>8.3 0.15 0.8</size></box></geometry>
+          <material><ambient>0.7 0.7 0.7 1</ambient><diffuse>0.8 0.8 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_west">
+      <static>true</static>
+      <pose>-4.0 0 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 6.15 0.8</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 6.15 0.8</size></box></geometry>
+          <material><ambient>0.7 0.7 0.7 1</ambient><diffuse>0.8 0.8 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_east">
+      <static>true</static>
+      <pose>4.0 0 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 6.15 0.8</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 6.15 0.8</size></box></geometry>
+          <material><ambient>0.7 0.7 0.7 1</ambient><diffuse>0.8 0.8 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============ 隔断墙（x=1.0，中间留 1.2 m 门洞） ============ -->
+    <model name="divider_south">
+      <static>true</static>
+      <pose>1.0 -1.8 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 2.4 0.8</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 2.4 0.8</size></box></geometry>
+          <material><ambient>0.6 0.65 0.6 1</ambient><diffuse>0.65 0.72 0.65 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="divider_north">
+      <static>true</static>
+      <pose>1.0 1.8 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 2.4 0.8</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 2.4 0.8</size></box></geometry>
+          <material><ambient>0.6 0.65 0.6 1</ambient><diffuse>0.65 0.72 0.65 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ================= 内部障碍（不对称摆放） ================= -->
+    <!-- 实验台（西侧长条，出生点前方偏左，激光近距可见） -->
+    <model name="bench_west">
+      <static>true</static>
+      <pose>-1.5 -2.0 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>1.6 0.6 0.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>1.6 0.6 0.5</size></box></geometry>
+          <material><ambient>0.75 0.55 0.35 1</ambient><diffuse>0.80 0.60 0.40 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 储物柜 1（东侧北端） -->
+    <model name="cabinet_1">
+      <static>true</static>
+      <pose>2.6 1.8 0.35 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>1.0 0.5 0.7</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>1.0 0.5 0.7</size></box></geometry>
+          <material><ambient>0.4 0.5 0.7 1</ambient><diffuse>0.45 0.55 0.75 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 储物柜 2（与 1 成直角，制造 L 形特征） -->
+    <model name="cabinet_2">
+      <static>true</static>
+      <pose>3.3 1.0 0.35 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>1.2 0.5 0.7</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>1.2 0.5 0.7</size></box></geometry>
+          <material><ambient>0.4 0.5 0.7 1</ambient><diffuse>0.45 0.55 0.75 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 货箱 1（东南侧，带一点旋转） -->
+    <model name="crate_1">
+      <static>true</static>
+      <pose>2.5 -1.8 0.3 0 0 0.3</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.8 0.8 0.6</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.8 0.8 0.6</size></box></geometry>
+          <material><ambient>0.6 0.5 0.3 1</ambient><diffuse>0.65 0.55 0.35 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 货箱 2（东南角，小一号、反向旋转） -->
+    <model name="crate_2">
+      <static>true</static>
+      <pose>3.4 -0.6 0.25 0 0 -0.4</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.6 0.6 0.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.6 0.6 0.5</size></box></geometry>
+          <material><ambient>0.6 0.5 0.3 1</ambient><diffuse>0.65 0.55 0.35 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 立柱 1（西侧，出生点左前方约 2.1 m） -->
+    <model name="pillar_1">
+      <static>true</static>
+      <pose>-2.8 1.5 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.55 0.55 0.55 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 立柱 2（西侧，与 1 的间距刻意与另一边不同，避免对称） -->
+    <model name="pillar_2">
+      <static>true</static>
+      <pose>-2.8 -1.2 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.55 0.55 0.55 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 垃圾桶（北侧中部，半径更大，增加特征差异） -->
+    <model name="bin_north">
+      <static>true</static>
+      <pose>0.0 2.2 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><cylinder><radius>0.30</radius><length>0.6</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.30</radius><length>0.6</length></cylinder></geometry>
+          <material><ambient>0.3 0.6 0.4 1</ambient><diffuse>0.35 0.65 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

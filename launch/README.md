@@ -19,7 +19,8 @@ roslaunch ~/xzy-project/launch/teleop_keyboard.launch
 roslaunch ~/xzy-project/launch/save_map.launch
 roslaunch ~/xzy-project/launch/navigation.launch            # 默认加载 maps/map.yaml
 roslaunch ~/xzy-project/launch/navigation.launch map_file:=$HOME/xzy-project/maps/map.yaml
-roslaunch ~/xzy-project/launch/simulation_world.launch world_file:=$HOME/xzy-project/worlds/my_world.world  # 自建世界
+roslaunch ~/xzy-project/launch/simulation_world.launch world_file:=$HOME/xzy-project/worlds/xzy_lab.world  # 自建实验室场景
+roslaunch ~/xzy-project/launch/simulation_world.launch gui:=false                      # 无界面运行
 ```
 
 注意：
