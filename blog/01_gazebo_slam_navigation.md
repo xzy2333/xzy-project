@@ -175,12 +175,71 @@ Gmapping 可以看成它的"工业版"——同样是栅格地图 + 扫描匹配
 
 ## 9. 下一步
 
-1. 用 Gazebo Building Editor 搭一个自己的环境，替换官方 `turtlebot3_world`，重跑建图 + 导航（从"跑官方 demo"变成"自主搭建"）
+1. ~~用 Gazebo Building Editor 搭一个自己的环境~~ → **已完成，见第 10 节**
 2. 迁移到 ROS2 Nav2（集群阶段的主场）
 3. 多车编队：把 m4 领航-跟随接进 Gazebo，开三台 TurtleBot3
 4. 每完成一环录 30 秒视频存档（见 VIDEO_CHECKLIST.md）
 
-## 10. 参考资料
+## 10. 从官方 demo 到自建环境（里程碑 A）
+
+跑通官方 `turtlebot3_world` 只能证明"会跑流程"。这一节把环境换成自己写的，
+验证整条链路不依赖官方资源。
+
+### 10.1 环境设计
+
+- 尺寸 8 m × 6 m，四面外墙（0.15 m 厚）+ 中间一道隔断墙，隔断在 y≈0 处留了
+  1.2 m 的门洞，把房间分成东西两间；
+- 障碍刻意**不对称**：西间有长凳和两根立柱，东间有柜子、货箱、垃圾桶，
+  避免"四面全对称"这种 SLAM 退化场景（对照见博客 02 的实验三）；
+- 环境是**手写 SDF**（`worlds/xzy_lab.world`，每个障碍一个 `<model>`，
+  改 `<pose>x y z roll pitch yaw</pose>` 即可移动），不依赖任何外部 mesh；
+- 看/改布局：`python3 scripts/list_world_models.py`（打印所有模型的位姿与尺寸）。
+
+### 10.2 流程（与官方案例完全一致，只多一个参数）
+
+```bash
+# 终端 1：自建世界
+roslaunch ~/xzy-project/launch/simulation_world.launch \
+    world_file:=$HOME/xzy-project/worlds/xzy_lab.world
+# 终端 2：建图（自带 robot_state_publisher；open_rviz:=false 可无界面）
+roslaunch ~/xzy-project/launch/mapping.launch
+# 终端 3：遥控走遍两个房间（也可用脚本路线：python3 scripts/drive_lab.py）
+roslaunch ~/xzy-project/launch/teleop_keyboard.launch
+# 存图（换名字，不覆盖官方地图）
+rosrun map_server map_saver -f ~/xzy-project/maps/xzy_lab
+# 导航（initial_pose 直接给出，启动即在建图起点）
+roslaunch ~/xzy-project/launch/navigation.launch \
+    map_file:=$HOME/xzy-project/maps/xzy_lab.yaml \
+    initial_pose_x:=-2.0 initial_pose_y:=-0.5 initial_pose_a:=0.0
+```
+
+### 10.3 结果（量化，不靠"看起来不错"）
+
+| 指标 | 官方地图 `maps/map.*` | 自建地图 `maps/xzy_lab.*` |
+|---|---|---|
+| 地图尺寸 | 384×384 @0.05 m | 384×384 @0.05 m |
+| 占据格数 | 892 | 1892 |
+| 占据范围 | 5.6 × 5.2 m | **8.0 × 6.0 m**（房间真值 8.2 × 6.1 m） |
+| 与真值 IoU（原始 / 容差 2 格） | —（官方世界无真值栅格） | **0.239 / 0.665** |
+
+工具：`scripts/map_quality.py`（从 world 文件渲染真值栅格再算 IoU）。
+原始 IoU 偏低是"逐格比对 + 地图墙比真值薄"造成的，这也是我们一直用"容差 2 格"
+口径的原因（和博客 02 的结论一致）。**尺寸与面积完全吻合**说明几何关系是对的。
+
+### 10.4 这一轮踩到的新坑
+
+1. **裸 `rosrun gmapping` 会 100% 丢帧**：官方 SLAM launch 会顺带启动
+   `robot_state_publisher`（激光坐标系靠它发布），自己手起 gmapping 就少了它，
+   消息过滤器按扫描时间戳查不到变换。→ 本仓库封装 `mapping.launch` 解决。
+2. **官方导航 launch 不透传初始位姿**：`amcl.launch` 有 `initial_pose_x/y/a`，
+   但上层没往下传，导致每次启动 AMCL 都落在地图原点（看起来像"车在地图中心"）。
+   → 本仓库 `navigation.launch` 重新拼装并透传这三个参数。
+3. **同一台机器只能开一个 Gazebo**：另起一个 `gzserver` 会因端口冲突直接退出，
+   表现为 `Spawn service failed`。启动前先确认没有别的 Gazebo 在跑。
+4. **地图文件命名与相对路径**：自建地图另存为 `maps/xzy_lab.*`，`yaml` 里的
+   `image:` 用相对路径（Noetic 的 map_server 按 yaml 所在目录解析）。
+
+## 11. 参考资料
 
 - ROBOTIS e-Manual：TurtleBot3 仿真/建图/导航
 - ROS Wiki：gmapping / amcl / move_base / map_server
