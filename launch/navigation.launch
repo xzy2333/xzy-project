@@ -1,11 +1,46 @@
 <?xml version="1.0"?>
 <launch>
-  <!-- 导航：AMCL + move_base + RViz（封装官方 turtlebot3_navigation.launch）
-       默认加载本项目保存的地图，可用 map_file:=路径 覆盖 -->
+  <!-- 导航：AMCL + move_base + RViz
+       与官方 turtlebot3_navigation.launch 的区别：
+         1) 直接把 initial_pose_x/y/a 透传给 amcl.launch（官方版本不透传，
+            所以每次启动 AMCL 都落在 (0,0)，表现为"车出现在地图中心"）；
+         2) open_rviz:=false 可无界面运行。
+       典型用法（车停在建图起点 (-2.0,-0.5) 时）：
+         roslaunch ~/xzy-project/launch/navigation.launch \
+             initial_pose_x:=-2.0 initial_pose_y:=-0.5 initial_pose_a:=0.0 -->
   <arg name="model" default="waffle_pi"/>
   <arg name="map_file" default="$(env HOME)/xzy-project/maps/map.yaml"/>
-  <include file="$(find turtlebot3_navigation)/launch/turtlebot3_navigation.launch">
+  <arg name="open_rviz" default="true"/>
+  <arg name="move_forward_only" default="false"/>
+  <arg name="initial_pose_x" default="0.0"/>
+  <arg name="initial_pose_y" default="0.0"/>
+  <arg name="initial_pose_a" default="0.0"/>
+
+  <!-- TurtleBot3（robot_state_publisher：激光等传感器坐标系靠它发布） -->
+  <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch">
     <arg name="model" value="$(arg model)"/>
-    <arg name="map_file" value="$(arg map_file)"/>
   </include>
+
+  <!-- 地图 -->
+  <node pkg="map_server" name="map_server" type="map_server"
+        args="$(arg map_file)"/>
+
+  <!-- AMCL（把初始位姿透传下去） -->
+  <include file="$(find turtlebot3_navigation)/launch/amcl.launch">
+    <arg name="initial_pose_x" value="$(arg initial_pose_x)"/>
+    <arg name="initial_pose_y" value="$(arg initial_pose_y)"/>
+    <arg name="initial_pose_a" value="$(arg initial_pose_a)"/>
+  </include>
+
+  <!-- move_base -->
+  <include file="$(find turtlebot3_navigation)/launch/move_base.launch">
+    <arg name="model" value="$(arg model)"/>
+    <arg name="move_forward_only" value="$(arg move_forward_only)"/>
+  </include>
+
+  <!-- RViz（带导航面板） -->
+  <group if="$(arg open_rviz)">
+    <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find turtlebot3_navigation)/rviz/turtlebot3_navigation.rviz"/>
+  </group>
 </launch>
