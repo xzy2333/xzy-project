@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# gmapping 参数对照实验：依次用 A/B/C 三组参数建同一张地图，结果存到
-# maps/lab_<组名>.{pgm,yaml}，并打印各组用时（地图质量用 map_quality.py 另算）。
+# gmapping 参数对照实验：用指定的参数组依次建同一张地图，结果存到
+# maps/lab_<组名>.{pgm,yaml}，并打印各组处理帧数（地图质量用 map_quality.py 另算）。
 #
-# 用法：bash ~/xzy-project/scripts/gmapping_param_sweep.sh
+# 用法：
+#   bash ~/xzy-project/scripts/gmapping_param_sweep.sh              # 默认跑 A B C
+#   SWEEP_GROUPS="D_coarse E_fine" bash ~/xzy-project/scripts/gmapping_param_sweep.sh
 # 前置：没有别的 Gazebo / rosmaster 在跑（脚本会先检查，有则直接退出）。
 set -u
 
@@ -10,12 +12,20 @@ WS="$HOME/xzy-project"
 source /opt/ros/noetic/setup.bash
 export TURTLEBOT3_MODEL=waffle_pi
 
+# 注意：变量名不能叫 GROUPS —— 那是 bash 的保留特殊变量（用户组 ID 列表），
+# 赋值会被忽略，导致组名变成 "1000"。这里用 PARAM_GROUPS。
+PARAM_GROUPS=(${SWEEP_GROUPS:-A_official B_fine C_lenient})
+
 if pgrep -x gzserver >/dev/null || pgrep -x rosmaster >/dev/null; then
   echo "检测到已有 gzserver/rosmaster 在运行，请先关闭它们再跑本脚本。" >&2
   exit 1
 fi
 
-for g in A_official B_fine C_lenient; do
+for g in "${PARAM_GROUPS[@]}"; do
+  if [ ! -f "$WS/launch/gmapping_params_${g}.yaml" ]; then
+    echo "找不到参数文件 launch/gmapping_params_${g}.yaml，跳过/中止。" >&2
+    exit 1
+  fi
   echo "======== 参数组 $g ========"
   roslaunch "$WS/launch/simulation_world.launch" \
       world_file:="$WS/worlds/xzy_lab.world" gui:=false > "/tmp/sweep_${g}_world.log" 2>&1 &

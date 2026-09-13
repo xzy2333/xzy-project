@@ -100,11 +100,12 @@ ROS 选型（详见 ENV_SETUP.md）：
 #### A2 建图参数
 
 - [x] 用 gmapping 在自建环境重跑建图（键盘遥控或脚本路线 `scripts/drive_lab.py`），确认闭环、无重影
-- [x] 记录并调参：做了三组对照（官方默认 / 更细更新 / 更宽容匹配），
-      结论 **C 组（minimumScore 30 + maxUrange 3.5）最优**：容差 IoU 0.452、
-      覆盖 8.0×6.0 m 与真值吻合；B 组（更细更新）无收益——本场景 `temporalUpdate`
-      才是主导。参数文件：`launch/gmapping_params_{A,B,C}*.yaml`，
-      结果与复现见 `docs/gmapping_param_sweep.md`
+- [x] 记录并调参：做了 **A–E 五组**同一路线对照。结论：①放宽匹配门槛 +
+      用满量程收益最大（容差 IoU 0.432→0.452，覆盖补齐到 8.0×6.0 m）；
+      ②只调细距离/角度阈值无效（B 组 0.426），因为 `temporalUpdate 0.5 s` 在主导；
+      把时间阈值放宽到 2 s（D/E）后细阈值立刻见效（0.420→0.452）——**"参数被另一个
+      参数掩盖"的实例**；③**推荐 E 组**：与 C 同为 0.452，但更新次数少 1/3（108 vs 171）。
+      参数文件 `launch/gmapping_params_{A..E}*.yaml`，结果见 `docs/gmapping_param_sweep.md`
 - [x] `map_saver` 保存到 `maps/xzy_lab.{yaml,pgm}`（384×384 @0.05，占据范围 8.0×6.0 m 与房间一致），
       `image:` 已用相对路径
 - [x] 对比官方地图 vs 自建地图：官方占据范围 5.6×5.2 m / 892 格；自建 8.0×6.0 m /
