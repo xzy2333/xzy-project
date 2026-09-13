@@ -8,8 +8,10 @@
        少了它 gmapping 会 100% 丢帧）。 -->
   <arg name="model" default="waffle_pi"/>
   <arg name="open_rviz" default="true"/>
+  <!-- 默认用 E 组参数（A–E 对照实验的最优推荐：与 C 同质量、更新次数少约 1/3）。
+       想用官方默认参数：gmapping_params:=$(find turtlebot3_slam)/config/gmapping_params.yaml -->
   <arg name="gmapping_params"
-       default="$(find turtlebot3_slam)/config/gmapping_params.yaml"/>
+       default="$(env HOME)/xzy-project/launch/gmapping_params_E_fine.yaml"/>
 
   <!-- TurtleBot3（robot_state_publisher） -->
   <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch">

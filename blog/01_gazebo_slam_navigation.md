@@ -291,9 +291,10 @@ roslaunch ~/xzy-project/launch/navigation.launch \
    （宽容匹配 + 时间阈值 2 s + 细距离/角度阈值）：同等质量、约少 1/3 匹配计算；
    若希望车静止时地图也持续刷新，再用 C。
 
-参数文件在 `launch/gmapping_params_{A_official,B_fine,C_lenient}.yaml`，切换方式：
+参数文件在 `launch/gmapping_params_{A_official,B_fine,C_lenient,D_coarse,E_fine}.yaml`，切换方式：
 `roslaunch ~/xzy-project/launch/mapping.launch gmapping_params:=<文件>`；
-完整实验记录见 `docs/gmapping_param_sweep.md`。
+**本项目已把 E 组设为建图默认**（`mapping.launch` 默认参数文件），完整实验记录见
+`docs/gmapping_param_sweep.md`。
 
 ## 11. 参考资料
 
