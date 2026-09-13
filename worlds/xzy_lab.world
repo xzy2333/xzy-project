@@ -156,7 +156,7 @@
     <!-- 储物柜 2（与 1 成直角，制造 L 形特征） -->
     <model name="cabinet_2">
       <static>true</static>
-      <pose>3.3 1.0 0.35 0 0 1.5708</pose>
+      <pose>2.85 0.95 0.35 0 0 1.5708</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>1.2 0.5 0.7</size></box></geometry>

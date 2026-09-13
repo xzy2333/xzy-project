@@ -50,7 +50,7 @@ python3 run.py        # 生成 output/m4_formation.png
 | 时间 | 任务 |
 |---|---|
 | 8 月 | **已完成**：ROS1 单车闭环（gmapping 建图 → AMCL/move_base 导航）、m1 手写 SLAM 与 gmapping 同输入对比（见 `m1_slam_sim/EXPERIMENTS.md`） |
-| 9 月 | 博客与实验证据整改、复试讲解稿；自建 Gazebo 环境 / ROS2 迁移规划 |
+| 9 月 | **已完成**：博客与实验证据整改、备课讲解稿；**里程碑 A 自建 Gazebo 环境**（`worlds/xzy_lab.world` + `maps/xzy_lab.*`，建图与导航已跑通）；ROS2 迁移规划 |
 | 10 月中~12 月 | 项目冻结，全力初试 |
 | 12 月考完~2 月 | m2–m4 接入 ROS（当前为纯数值仿真）、ROS2/Nav2、视频 + 简历 |
 | 出分后 | 邮件联系闫老师，附 GitHub + 视频 |
