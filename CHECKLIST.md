@@ -100,8 +100,11 @@ ROS 选型（详见 ENV_SETUP.md）：
 #### A2 建图参数
 
 - [x] 用 gmapping 在自建环境重跑建图（键盘遥控或脚本路线 `scripts/drive_lab.py`），确认闭环、无重影
-- [ ] 记录并调参：`maxUrange`、`minimumScore`、`linearUpdate` / `angularUpdate`（当前沿用官方
-      `turtlebot3_slam/config/gmapping_params.yaml`，尚未做自己的调参）
+- [x] 记录并调参：做了三组对照（官方默认 / 更细更新 / 更宽容匹配），
+      结论 **C 组（minimumScore 30 + maxUrange 3.5）最优**：容差 IoU 0.452、
+      覆盖 8.0×6.0 m 与真值吻合；B 组（更细更新）无收益——本场景 `temporalUpdate`
+      才是主导。参数文件：`launch/gmapping_params_{A,B,C}*.yaml`，
+      结果与复现见 `docs/gmapping_param_sweep.md`
 - [x] `map_saver` 保存到 `maps/xzy_lab.{yaml,pgm}`（384×384 @0.05，占据范围 8.0×6.0 m 与房间一致），
       `image:` 已用相对路径
 - [x] 对比官方地图 vs 自建地图：官方占据范围 5.6×5.2 m / 892 格；自建 8.0×6.0 m /

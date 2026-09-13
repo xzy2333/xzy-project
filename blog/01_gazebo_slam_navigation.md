@@ -260,6 +260,30 @@ roslaunch ~/xzy-project/launch/navigation.launch \
 距离，插入箱子后路径只是略微外移；这也解释了为什么"重规划"在这种小场景里
 不易被肉眼察觉。
 
+### 10.6 gmapping 参数对照实验（同一路线跑三组）
+
+官方参数不是为这个 8×6 m 小房间调的，所以我做了三组对照：同一世界、同一条
+85 秒固定路线（`scripts/drive_lab.py`），只改参数，比地图质量（`scripts/map_quality.py`
+算与真值栅格的容差 IoU）：
+
+| 组 | 改动 | 容差 IoU | 覆盖范围 | 占据格 |
+|---|---|---|---|---|
+| A 官方默认 | — | 0.432 | 7.5×6.0 m | 1012 |
+| B 更细更新 | `linearUpdate 1.0→0.4`、`angularUpdate 0.2→0.1` | 0.426 | 7.3×6.0 m | 1042 |
+| C 更宽容匹配 | `minimumScore 50→30`、`maxUrange 3.0→3.5` | **0.452** | **8.0×6.0 m** | 1096 |
+
+（房间真值 8.2×6.1 m；三组都没有丢帧告警。）
+
+两个结论：**C 组最好**——把匹配门槛从 50 降到 30、并用满激光量程，减少了"分数
+不够就丢帧"，地图覆盖更完整（8.0×6.0 m 与真值吻合）；**B 组没有收益**——因为
+这组参数里 `temporalUpdate（0.5 s）` 才是主导，扫描约 2 Hz，几乎每帧都会更新，
+所以把线性/角更新阈值调小并不会带来更多更新。想验证"更细更新"的价值，得同时
+把 `temporalUpdate` 调小再比。
+
+参数文件在 `launch/gmapping_params_{A_official,B_fine,C_lenient}.yaml`，切换方式：
+`roslaunch ~/xzy-project/launch/mapping.launch gmapping_params:=<文件>`；
+完整实验记录见 `docs/gmapping_param_sweep.md`。
+
 ## 11. 参考资料
 
 - ROBOTIS e-Manual：TurtleBot3 仿真/建图/导航

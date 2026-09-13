@@ -1,11 +1,33 @@
 <?xml version="1.0"?>
 <launch>
-  <!-- SLAM 建图（封装官方 turtlebot3_slam.launch，gmapping + RViz） -->
+  <!-- SLAM 建图（gmapping），自己拼装以便切换参数文件：
+       - gmapping_params:=<yaml>  选择参数组（默认 A 组=官方参数）
+       - open_rviz:=false        无界面运行（自动化测试）
+       与官方 turtlebot3_slam.launch 的唯一区别是参数文件可切换；
+       同时保证 robot_state_publisher 会被启动（激光坐标系靠它发布，
+       少了它 gmapping 会 100% 丢帧）。 -->
   <arg name="model" default="waffle_pi"/>
-  <!-- open_rviz:=false 可无界面运行（自动化测试 / 服务器） -->
   <arg name="open_rviz" default="true"/>
-  <include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch">
+  <arg name="gmapping_params"
+       default="$(find turtlebot3_slam)/config/gmapping_params.yaml"/>
+
+  <!-- TurtleBot3（robot_state_publisher） -->
+  <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch">
     <arg name="model" value="$(arg model)"/>
-    <arg name="open_rviz" value="$(arg open_rviz)"/>
   </include>
+
+  <!-- gmapping -->
+  <node pkg="gmapping" type="slam_gmapping" name="turtlebot3_slam_gmapping"
+        output="screen">
+    <param name="base_frame" value="base_footprint"/>
+    <param name="odom_frame" value="odom"/>
+    <param name="map_frame" value="map"/>
+    <rosparam command="load" file="$(arg gmapping_params)"/>
+  </node>
+
+  <!-- RViz -->
+  <group if="$(arg open_rviz)">
+    <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find turtlebot3_slam)/rviz/turtlebot3_gmapping.rviz"/>
+  </group>
 </launch>
