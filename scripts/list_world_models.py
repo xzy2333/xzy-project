@@ -28,8 +28,8 @@ def main():
     print("== %s ==" % path)
     print("%-16s %-32s %s" % ("模型名", "位姿 pose(x y z roll pitch yaw)",
                               "尺寸"))
-    for name, body in re.findall(r"<model name='([^']+)'>(.*?)</model>",
-                                 txt, re.S):
+    for name, body in re.findall(
+            r"<model name=['\"]([^'\"]+)['\"]>(.*?)</model>", txt, re.S):
         pose = re.search(r"<pose>([^<]+)</pose>", body)
         size = re.search(r"<size>([^<]+)</size>", body)
         radius = re.search(r"<radius>([^<]+)</radius>", body)
