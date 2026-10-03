@@ -44,7 +44,9 @@ ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose \
 ## 参数
 
 `sim_xzy_lab.launch.py`：`world_file`（默认 `worlds/xzy_lab.world`）、`x_pos`/`y_pos`
-（默认 -2.0 / -0.5，和建图起点一致）、`gui`、`use_sim_time`。
+（默认 -2.0 / -0.5，和建图起点一致）、`gui`、`use_sim_time`、`robot_sdf`
+（默认仓库里的精简模型 `worlds/models/turtlebot3_waffle_pi/model.sdf`，见该目录 README；
+想跑官方完整模型对比就把它指回 `/opt/ros/humble/share/turtlebot3_gazebo/models/turtlebot3_waffle_pi/model.sdf`）。
 
 `mapping.launch.py`：`use_sim_time`（默认 true，仿真必须）、`open_rviz`、
 `configuration_basename`。
