@@ -59,14 +59,16 @@ ros2 launch turtlebot3_cartographer cartographer.launch.py
 建图完成保存：
 
 ```bash
-ros2 run nav2_map_server map_saver_cli -f ~/map
+# 注意：容器里的 ~ 是 /root，而容器是 --rm（退出即销毁），存进去的文件会没
+# 必须存到 /workspace/maps/ 下 —— 它挂载的就是宿主机的 ~/xzy-project/maps/
+ros2 run nav2_map_server map_saver_cli -f /workspace/maps/ros2_lab --ros-args -p save_map_timeout:=30.0
 ```
 
 ## A3：路径规划（Nav2）
 
 ```bash
 export TURTLEBOT3_MODEL=waffle_pi
-ros2 launch turtlebot3_navigation2 navigation2.launch.py map:=~/map.yaml
+ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=true map:=/workspace/maps/ros2_lab.yaml
 ```
 
 RViz 里用 "2D Goal Pose" 点一个目标，小车自动规划路径并导航过去。Nav2 的全局规划器干的事，和你 [m3](../m3_path_planning/README.md) 里写的 A* 是同一个逻辑。
