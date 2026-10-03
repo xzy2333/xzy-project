@@ -2,6 +2,8 @@
 
 本目录把官方 TurtleBot3 的启动命令封装成项目自己的名字，指令统一走 `roslaunch` + 绝对路径或 `roslaunch ~/xzy-project/launch/xxx.launch`：
 
+> ROS2 Humble 版（容器里跑）在 [`ros2/`](ros2/README.md) 子目录，用法见那份 README。
+
 | 本项目命令 | 封装的原命令 | 作用 |
 |---|---|---|
 | `simulation_world.launch` | `turtlebot3_gazebo/turtlebot3_world.launch` | 启动 Gazebo 仿真世界 |
