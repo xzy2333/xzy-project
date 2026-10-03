@@ -52,6 +52,43 @@ ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose \
 `navigation.launch.py`：`map_file`、`open_rviz`、`use_sim_time`、`params_file`、
 `initial_pose_x` / `initial_pose_y` / `initial_pose_a`（默认 0 / 0 / 0，即建图起点）。
 
+## 用 ROS1 建的老图跑 ROS2 导航（不用重建）
+
+栅格地图是跟 ROS 版本无关的中间表示（pgm + yaml），ROS1 的 `map_server` 和 ROS2 的
+`nav2_map_server` 读的是同一套格式。老图 `maps/xzy_lab.*` 是在同一个
+`worlds/xzy_lab.world`、同一个 spawn 点建的，几何直接对得上。**已实测**：容器里加载
+`/workspace/maps/xzy_lab.yaml`，`/map` 分辨率 0.05、384×384，与 ROS1 那边一致。
+
+但有两处"约定"要处理，否则会失败：
+
+**1）yaml 里的 `image:` 必须是相对路径。** ROS1 的 `map_saver` 会写成
+`/home/xzy/xzy-project/maps/xzy_lab.pgm` 这种宿主机绝对路径，容器里没有 `/home/xzy`
+这个目录，加载直接失败。已把 `maps/xzy_lab.yaml` 改成 `image: xzy_lab.pgm`
+（相对路径按 yaml 所在目录解析，容器内外都能用）。
+注意：**在 ROS1 里重存一次图会把它写回绝对路径**，跨端用之前先检查一眼：
+
+```bash
+grep '^image:' maps/xzy_lab.yaml      # 期望看到 image: xzy_lab.pgm
+```
+
+**2）初始位姿不一样。** ROS1/gmapping 的 map 原点 ≈ odom 原点，建图起点在
+map(-2.0, -0.5)；Cartographer 的 map 原点是建图起点，也就是 map(0,0)。
+所以用老图时初始位姿要给 (-2.0, -0.5)，不是默认的 0：
+
+```bash
+# 终端 1：仿真（车停在 spawn 点 -2.0, -0.5）
+ros2 launch /workspace/launch/ros2/sim_xzy_lab.launch.py
+
+# 终端 2：用 ROS1 的老图导航（注意 initial_pose 用老图坐标系的值）
+ros2 launch /workspace/launch/ros2/navigation.launch.py \
+    map_file:=/workspace/maps/xzy_lab.yaml \
+    initial_pose_x:=-2.0 initial_pose_y:=-0.5 initial_pose_a:=0.0
+```
+
+两条路线随你选：**借老图**（省一次建图，5 分钟就能验证导航）或**自己建新图**
+（走一遍 ROS2 建图流程，存成 `maps/ros2_xzy_lab.*`，此时初始位姿用默认的 0）。
+两张图可以都留着做对照。
+
 ## 踩过的坑（都是实测，不是推测）
 
 1. **跨容器必须 `--ipc=host`**：只有 `--net=host` 时话题列表看得见、数据一条收不到
@@ -70,6 +107,11 @@ ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose \
 6. **`__pycache__` 属主**：容器里以 root 跑 `ros2 launch` 会在仓库里生成 root 属主的
    `__pycache__/`，宿主机这边就写不进去了。已在 `.gitignore` 里，要删用
    `pkexec rm -rf launch/ros2/__pycache__`。
+7. **`map_server` 是 lifecycle 节点**（ROS2 特有）：单跑
+   `ros2 run nav2_map_server map_server ...` 只是 "Creating"，不会发 `/map`，
+   要再 `ros2 lifecycle set /map_server configure` + `activate` 才开始发布。
+   走 `nav2_bringup`（也就是本目录的 `navigation.launch.py`）时由 lifecycle_manager
+   自动完成，不用手动管。
 
 ## 验证状态（重要）
 
