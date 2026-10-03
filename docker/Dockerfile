@@ -40,7 +40,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV TURTLEBOT3_MODEL=waffle_pi \
     GAZEBO_MODEL_PATH=/opt/ros/humble/share/turtlebot3_gazebo/models:/usr/share/gazebo-11/models \
     LIBGL_ALWAYS_SOFTWARE=1 \
-    RCUTILS_COLORIZED_OUTPUT=1
+    RCUTILS_COLORIZED_OUTPUT=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
 # 后续需要 Stonefish 时，参考 https://github.com/patrykcieslak/stonefish 的 ROS2 安装说明
 CMD ["/bin/bash"]

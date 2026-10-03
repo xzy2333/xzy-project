@@ -50,7 +50,8 @@ ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose \
 `configuration_basename`。
 
 `navigation.launch.py`：`map_file`、`open_rviz`、`use_sim_time`、`params_file`、
-`initial_pose_x` / `initial_pose_y` / `initial_pose_a`（默认 0 / 0 / 0，即建图起点）。
+`rviz_config_file`、`initial_pose_x` / `initial_pose_y` / `initial_pose_a`
+（默认 0 / 0 / 0，即建图起点）。`open_rviz:=false` 可不起 RViz。
 
 ## 用 ROS1 建的老图跑 ROS2 导航（不用重建）
 
@@ -112,6 +113,12 @@ ros2 launch /workspace/launch/ros2/navigation.launch.py \
    要再 `ros2 lifecycle set /map_server configure` + `activate` 才开始发布。
    走 `nav2_bringup`（也就是本目录的 `navigation.launch.py`）时由 lifecycle_manager
    自动完成，不用手动管。
+8. **`nav2_bringup` 不会帮你起 RViz**：它的 `bringup_launch.py` 里既没有 `use_rviz`
+   参数、也没有 rviz2 节点（实测：声明的参数只有 autostart/map/params_file/slam/
+   use_composition/use_sim_time 等，grep rviz 零命中），传 `use_rviz:=true` 会被静默忽略。
+   所以本目录的 `navigation.launch.py` **自己起 rviz2**（配置用 TurtleBot3 的
+   `tb3_navigation2.rviz`，与 ROS1 那边 `navigation.launch` 用的 RViz 配置对应）。
+   想要 RViz 又看不到窗口时，先确认 `open_rviz` 没被设成 false、容器有 `DISPLAY`。
 
 ## 验证状态（重要）
 

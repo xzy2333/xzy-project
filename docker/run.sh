@@ -37,6 +37,7 @@ docker run "${TTY_FLAG[@]}" --rm \
   --net=host \
   --ipc=host \
   -e DISPLAY="$DISPLAY" \
+  -e PYTHONDONTWRITEBYTECODE=1 \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   -v "$PROJECT_ROOT":/workspace \
   -w /workspace \
